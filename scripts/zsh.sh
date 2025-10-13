@@ -209,6 +209,9 @@ if [ -f "$HOME/.zshrc" ]; then
   if ! grep -q "FZF configuration" "$HOME/.zshrc"; then
     cat >>"$HOME/.zshrc" <<'EOF'
 
+
+sudo chsh -s /bin/zsh
+
 # FZF configuration
 export FZF_DEFAULT_COMMAND='find . -type f'
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
