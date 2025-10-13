@@ -1,0 +1,2 @@
+curl -fsSL https://github.com/vangxitrum/config/blob/main/init.sh
+  | sudo -E bash

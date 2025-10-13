@@ -41,8 +41,6 @@ else
     print_status "Installing GVM dependencies..."
     sudo apt-get update
     sudo apt-get -y install curl git mercurial make binutils bison gcc build-essential
-    sudo apt clean
-    rm -rf /var/lib/apt/lists/*
 
     print_status "Installing GVM..."
     bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
@@ -127,3 +125,38 @@ echo '' >>~/.profile &&
 
 print_success "Installation complete!"
 print_status "Restart your terminal or source your shell config to use the version managers."
+
+source $HOME/.profile
+
+nvm install node
+
+# Variables
+GO_VERSION="1.23.2" # Change this to your desired version
+INSTALL_DIR="/usr/local"
+PROFILE_FILE="$HOME/.bashrc"
+
+# Detect architecture
+ARCH=$(uname -m)
+case $ARCH in
+x86_64) GO_ARCH="amd64" ;;
+aarch64) GO_ARCH="arm64" ;;
+armv6l) GO_ARCH="armv6l" ;;
+*)
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+    ;;
+esac
+
+# Remove old Go installation if exists
+sudo rm -rf "${INSTALL_DIR}/go"
+
+# Download Go tarball
+echo "Downloading Go ${GO_VERSION} for ${GO_ARCH}..."
+wget -q "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" -O /tmp/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz
+
+# Extract and install
+echo "Installing Go..."
+sudo tar -C "${INSTALL_DIR}" -xzf /tmp/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz
+
+# Clean up
+rm /tmp/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz
