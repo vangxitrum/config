@@ -25,9 +25,9 @@ cd config
 
 sudo chmod +x ./scripts/*.sh
 
-sudo ./scripts/language.sh
-
 sudo ./scripts/zsh.sh
+
+sudo ./scripts/language.sh
 
 sudo ./scripts/i3.sh
 

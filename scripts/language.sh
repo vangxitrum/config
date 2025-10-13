@@ -126,6 +126,10 @@ echo '' >>~/.profile &&
 print_success "Installation complete!"
 print_status "Restart your terminal or source your shell config to use the version managers."
 
+source $HOME/.profile
+
+nvm install node
+
 # Variables
 GO_VERSION="1.23.2" # Change this to your desired version
 INSTALL_DIR="/usr/local"
