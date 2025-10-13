@@ -33,7 +33,7 @@ export SHELL=/bin/zsh
 export EDITOR=nvim
 
 export GOPATH=$HOME/go
-export PATH=$PATH:~/go/bin
+export PATH=$PATH:/usr/local/go/bin
 
 export BROWSER=/usr/bin/firefox
 
