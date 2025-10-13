@@ -1,0 +1,18 @@
+name: cdn
+root: ~/Work/go-aioz-media
+
+windows:
+  - mediamtx:
+      layout: main-vertical
+      panes:
+        - nvim .
+  - gohlslib:
+      root: ~/Work/gohlslib
+      layout: main-vertical
+      panes:
+        - nvim .
+  - gohlslib1:
+      root: ~/Work/gohlslib-1
+      layout: main-vertical
+      panes:
+        - nvim .

@@ -1,0 +1,16 @@
+# /home/tuan/.config/tmuxinator/auth-client.yml
+
+name: auth-client
+root: ~/Work/aioz-auth-client
+
+windows:
+  - client:
+      layout: main-vertical
+      panes:
+        - nvim .
+
+  - event:
+      root: ~/Work/aioz-auth-event-handler
+      layout: main
+      panes:
+        - nvim .

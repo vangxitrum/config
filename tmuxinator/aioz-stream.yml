@@ -1,0 +1,38 @@
+# /home/tuan/.config/tmuxinator/aioz-stream.yml
+
+name: aioz-stream
+root: ~/Work/aioz-stream
+
+windows:
+  - aioz-stream-editor:
+      layout: main-vertical
+      panes:
+        - nvim .
+  - core-editor:
+      layout: main-vertical
+      root: ~/Work/aioz-stream/w3streamcore
+      panes:
+        - nvim .
+  - fe-source:
+      root: ~/Work/aioz-w3stream-fe
+      layout: main-vertical
+      panes:
+        - nvim .
+  - air:
+      layout: main-vertical
+      panes:
+        - make watch
+  - remote:
+      layout: main-vertical
+      panes:
+        - ssh -t w3stream docker logs -f --tail 10 w3stream
+  - fe:
+      layout: main-vertical
+      root: ~/Work/aioz-w3stream-fe
+      panes:
+        - yarn dev:dashboard
+  - fe-watch:
+      layout: main-vertical
+      root: ~/Work/aioz-w3stream-fe
+      panes:
+        - yarn watch

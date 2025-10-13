@@ -9,11 +9,11 @@
 #
 # Please see https://i3wm.org/docs/userguide.html for a complete reference!
 
-set $mod Mod1
+set $mod Mod4
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
-font pango:monospace 8
+font pango:FiraCode 8
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
@@ -45,7 +45,7 @@ bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOU
 floating_modifier $mod
 
 # start a terminal
-bindsym $mod+Return exec kitty
+bindsym $mod+Return exec ghostty
 
 # kill focused window
 bindsym $mod+q kill
@@ -59,10 +59,10 @@ bindsym $mod+d exec --no-startup-id dmenu_run
 # bindcode $mod+40 exec --no-startup-id i3-dmenu-desktop
 
 # change focus
-bindsym $mod+j focus left
-bindsym $mod+k focus down
-bindsym $mod+l focus up
-bindsym $mod+semicolon focus right
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+bindsym $mod+h focus left
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
@@ -71,10 +71,10 @@ bindsym $mod+Up focus up
 bindsym $mod+Right focus right
 
 # move focused window
-bindsym $mod+Shift+j move left
-bindsym $mod+Shift+k move down
-bindsym $mod+Shift+l move up
-bindsym $mod+Shift+semicolon move right
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+bindsym $mod+Shift+h move left
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Shift+Left move left
@@ -83,7 +83,7 @@ bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
 
 # split in horizontal orientation
-bindsym $mod+h split h
+# bindsym $mod+h split h
 
 # split in vertical orientation
 bindsym $mod+v split v
@@ -105,23 +105,26 @@ bindsym $mod+space focus mode_toggle
 # focus the parent container
 bindsym $mod+a focus parent
 
+# snipshot
+bindsym $mod+Shift+s exec flameshot
+
 # focus the child container
 #bindsym $mod+d focus child
 
 # Define names for default workspaces for which we configure key bindings later on.
 # We use variables to avoid repeating the names in multiple places.
-set $monitor_left "HDMI-1"
-set $monitor_right "DP-3"
+set $monitor_right "DP-0"
+set $monitor_left "HDMI-0"
 
 
-set $ws1 "1: Terminals"
-set $ws2 "2: Browser"
-set $ws3 "3: Slack"
-set $ws4 "4: DB"
-set $ws5 "5: Postman"
-set $ws6 "6"
-set $ws7 "7: Files"
-set $ws8 "8"
+set $ws1 "1:terminal"
+set $ws2 "2:browser"
+set $ws3 "3:slack"
+set $ws4 "4:db"
+set $ws5 "5:postman"
+set $ws6 "6:files"
+set $ws7 "7:nodes"
+set $ws8 "8:others"
 set $ws9 "9"
 set $ws10 "10"
 
@@ -140,19 +143,23 @@ bindsym $mod+0 workspace number $ws10
 #assign workspace to monitor
 workspace $ws1 output $monitor_left
 workspace $ws2 output $monitor_right
-workspace $ws3 output $monitor_left
+workspace $ws3 output $monitor_right
 workspace $ws4 output $monitor_right
 workspace $ws5 output $monitor_right
 workspace $ws7 output $monitor_right
 
-
 # open app for workspace
-assign [class="kitty"] $ws1
+assign [class="ghostty"] $ws1
+assign [class="Code"] $ws1
 assign [class="firefox"] $ws2
+assign [class="brave-browser"] $ws2
+assign [class="Brave-browser"] $ws2
 assign [class="Slack"] $ws3
 assign [class="DBeaver"] $ws4
+assign [class="jetbrains-datagrip"] $ws4
 assign [class="Postman"] $ws5
-assign [class="Nautilus"] $ws7
+assign [class="Nautilus"] $ws6
+assign [class="aioz_worker_node"] $ws7
 
 
 # move focused container to workspace
@@ -226,6 +233,14 @@ exec_always nitrogen --restore
 # start polybar
 exec_always ~/.config/scripts/gnome-keyring.sh
 exec_always ~/.config/polybar/launch.sh
+exec_always xrandr --output $monitor_right --right-of $monitor_left
+exec --no-startup-id dunst -print &
+exec --no-startup-id slack &
 
 # hide window title
 for_window [class=".*"] border pixel 0
+
+# dunst keybindings
+bindsym $mod+n exec --no-startup-id dunstctl close
+bindsym $mod+Shift+n exec --no-startup-id dunstctl close-all
+bindsym $mod+ctrl+n exec --no-startup-id dunstctl history-pop

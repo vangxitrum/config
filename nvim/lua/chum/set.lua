@@ -78,7 +78,6 @@ vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
 vim.opt.guicursor = ""
 
-
 vim.opt.wrap = false
 vim.opt.swapfile = false
 vim.opt.backup = false
@@ -96,3 +95,5 @@ vim.opt.isfname:append("@-@")
 vim.opt.updatetime = 50
 
 vim.opt.colorcolumn = "80"
+
+vim.g.python3_host_prog = "/home/tuan/anaconda3/bin/python"

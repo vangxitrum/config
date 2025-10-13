@@ -1,0 +1,12 @@
+# /home/tuan/.config/tmuxinator/buffy.yml
+
+name: buffy
+root: ~/personal/buffy-backend
+
+windows:
+  - editor:
+      layout: main-vertical
+      panes:
+        - vim .
+  - server: make air
+  - fe: echo "Frontend running"

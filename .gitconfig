@@ -1,0 +1,12 @@
+[user]
+	email = tuan.quang.tran@aioz.io
+	name = Tuan
+
+[url "ssh://git@10.0.0.50/"]
+	insteadOf = http://10.0.0.50/
+
+[url "ssh://git@10.0.0.50/"]
+	insteadOf = https://10.0.0.50/
+
+[url "git@aiozgithub:tuantq-aioz/"]
+	insteadOf = https://github.com/tuantq-aioz/

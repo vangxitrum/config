@@ -1,0 +1,25 @@
+# /home/tuan/.config/tmuxinator/aioz-ads.yml
+
+name: aioz-ads
+root: ~/Work/aioz-ads
+
+windows:
+  - editor:
+      layout: main-vertical
+      panes:
+        - nvim .
+  # - fe-source:
+  #     root: ~/Work/aioz-accounts
+  #     layout: main
+  #     panes:
+  #       - nvim .
+  # - http:
+  #     panes:
+  #       - make watch-http
+  # - grpc:
+  #     panes:
+  #       - make watch-grpc
+  # - fe:
+  #     root: ~/Work/aioz-accounts
+  #     panes:
+  #       - yarn dev

@@ -2,7 +2,7 @@ return {
     "laytan/cloak.nvim",
     config = function()
         require("cloak").setup({
-            enabled = true,
+            enabled = false,
             cloak_character = "*",
             -- The applied highlight group (colors) on the cloaking, see `:h highlight`.
             highlight_group = "Comment",
@@ -14,6 +14,7 @@ return {
                         ".env*",
                         "wrangler.toml",
                         ".dev.vars",
+                        "*.env"
                     },
                     -- Match an equals sign and any character after it.
                     -- This can also be a table of patterns to cloak,

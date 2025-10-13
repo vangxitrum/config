@@ -1,0 +1,28 @@
+# /home/tuan/.config/tmuxinator/auth-service.yml
+
+name: auth-service
+root: ~/Work/aioz-authenticate-service
+
+windows:
+  - editor:
+      layout: main-vertical
+      panes:
+        - nvim .
+  - fe-source:
+      root: ~/Work/aioz-accounts
+      layout: main-vertical
+      panes:
+        - nvim .
+  - http:
+      layout: main-vertical
+      panes:
+        - make watch-http
+  - grpc:
+      layout: main-vertical
+      panes:
+        - make watch-grpc
+  - fe:
+      root: ~/Work/aioz-accounts
+      layout: main-vertical
+      panes:
+        - yarn dev

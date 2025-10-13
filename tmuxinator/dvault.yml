@@ -1,0 +1,15 @@
+# /home/tuan/.config/tmuxinator/dvault.yml
+
+name: aioz-dvault
+root: ~/Work/aioz-dvault/
+
+windows:
+  - aioz-dvault-editor:
+      layout: main-vertical
+      panes:
+        - nvim .
+  - rclone-editor:
+      layout: main-vertical
+      root: ~/Work/aioz-rclone
+      panes:
+        - nvim .

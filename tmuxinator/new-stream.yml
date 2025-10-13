@@ -1,0 +1,10 @@
+# /home/tuan/.config/tmuxinator/new-stream.yml
+
+name: new-stream
+root: ~/Work/hub
+
+windows:
+  - hub:
+      layout: main-vertical
+      panes:
+        - nvim .

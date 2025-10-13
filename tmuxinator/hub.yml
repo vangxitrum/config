@@ -1,0 +1,26 @@
+# /home/tuan/.config/tmuxinator/hub.yml
+
+name: hub
+root: ~/Work/hub
+
+windows:
+  - aiozhub-transcode:
+      layout: main-vertical
+      panes:
+        - nvim .
+  - air-transcode:
+      layout: main-vertical
+      panes:
+        - make air-transcode
+  - worker:
+      layout: main-vertical
+      panes:
+        - make run-worker
+  - uplink:
+      layout: main-vertical
+      panes:
+        - make run-uplink
+  - worker-manager:
+      layout: main-vertical
+      panes:
+        - make run-worker-manager
