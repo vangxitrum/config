@@ -28,19 +28,19 @@ cd config
 sudo chmod +x ./scripts/*.sh
 
 # Languages
-sudo ./scripts/go.sh
-sudo ./scripts/node.sh
-sudo ./scripts/python.sh
-sudo ./scripts/luarocks.sh
+./scripts/go.sh
+./scripts/node.sh
+./scripts/python.sh
+./scripts/luarocks.sh
 
 # Environment and Tools
-sudo ./scripts/zsh.sh
-sudo ./scripts/docker.sh
-sudo ./scripts/i3.sh
-sudo ./scripts/tmux.sh
-sudo ./scripts/nvim.sh
-sudo ./scripts/ghostty.sh
-sudo ./scripts/font.sh
+./scripts/zsh.sh
+./scripts/docker.sh
+./scripts/i3.sh
+./scripts/tmux.sh
+./scripts/nvim.sh
+./scripts/ghostty.sh
+./scripts/font.sh
 
 # Install Fcitx5 for Telex (Vietnamese)
 sudo apt-get install -y fcitx5 fcitx5-unikey im-config

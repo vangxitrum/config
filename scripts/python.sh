@@ -43,11 +43,12 @@ else
     MINICONDA_INSTALLER="Miniconda3-latest-Linux-x86_64.sh"
     cd /tmp
     curl -O "https://repo.anaconda.com/miniconda/$MINICONDA_INSTALLER"
-    zsh "$MINICONDA_INSTALLER" -b -p "$HOME/miniconda3"
+    bash "$MINICONDA_INSTALLER" -b -p "$HOME/miniconda3"
     rm "$MINICONDA_INSTALLER"
 
-    # Initialize conda
+    # Initialize conda for the current user
     "$HOME/miniconda3/bin/conda" init bash
+    "$HOME/miniconda3/bin/conda" init zsh
 
     print_success "Miniconda installed successfully!"
     print_status "Usage: conda create -n myenv python=3.11, conda activate myenv"
