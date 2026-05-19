@@ -31,6 +31,7 @@ sudo chmod +x ./scripts/*.sh
 sudo ./scripts/go.sh
 sudo ./scripts/node.sh
 sudo ./scripts/python.sh
+sudo ./scripts/luarocks.sh
 
 # Environment and Tools
 sudo ./scripts/zsh.sh
