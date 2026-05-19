@@ -52,13 +52,26 @@ else
 fi
 
 # Add user to docker group
-print_status "Adding user $USER to docker group..."
-if getent group docker >/dev/null; then
-    sudo usermod -aG docker $USER
-    print_success "User $USER added to docker group."
-    print_status "Note: You may need to log out and back in for this to take effect."
+echo "=================================="
+echo "Configuring Docker Permissions"
+echo "=================================="
+
+# Get the current username reliably
+CURRENT_USER=$(id -u -n)
+
+# Ensure the docker group exists
+if ! getent group docker >/dev/null; then
+    print_status "Creating docker group..."
+    sudo groupadd docker || true
+fi
+
+if [ "$CURRENT_USER" == "root" ]; then
+    print_status "Running as root, skipping user group assignment."
 else
-    print_error "Docker group does not exist. Please ensure Docker is installed correctly."
+    print_status "Adding user $CURRENT_USER to docker group..."
+    sudo usermod -aG docker "$CURRENT_USER"
+    print_success "User $CURRENT_USER added to docker group."
+    print_status "Note: You may need to log out and back in (or run 'newgrp docker') for this to take effect."
 fi
 
 print_success "Docker setup complete!"
