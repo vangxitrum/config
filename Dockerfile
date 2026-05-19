@@ -55,6 +55,7 @@ RUN ./scripts/tmux.sh
 RUN ./scripts/nvim.sh
 RUN ./scripts/ghostty.sh
 RUN ./scripts/font.sh
+RUN ./scripts/dunst.sh
 
 # Run remaining setup from init.sh (Vietnamese input, etc.)
 # We skip the scripts we already ran

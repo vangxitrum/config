@@ -1,0 +1,64 @@
+[global]
+    # Display
+    monitor = 0
+    follow = mouse
+    # Geometry
+    width = 350
+    height = 300
+    origin = top-center
+    offset = 0x30
+    # Progress bar
+    progress_bar = true
+    progress_bar_height = 10
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+    # Appearance
+    frame_width = 1
+    frame_color = "#89b4fa"
+    separator_color = frame
+    corner_radius = 8
+    transparency = 40
+    # Font (adjust based on what you have installed)
+    font = Ubuntu Mono 11
+    # Text
+    markup = full
+    format = "<b>%s</b>\n%b"
+    alignment = left
+    vertical_alignment = center
+    show_age_threshold = 60
+    word_wrap = yes
+    # Icons
+    icon_position = left
+    max_icon_size = 48
+    icon_path = /usr/share/icons/Papirus/16x16/status/:/usr/share/icons/Papirus/16x16/devices/:/usr/share/icons/Papirus/16x16/apps/
+    # History
+    sticky_history = yes
+    history_length = 20
+    # Misc
+    dmenu = dmenu -p dunst:
+    browser = firefox-esr
+    always_run_script = true
+    title = Dunst
+    class = Dunst
+    # Mouse actions
+    mouse_left_click = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+[experimental]
+    per_monitor_dpi = false
+[urgency_low]
+    background = "#2d3748"
+    foreground = "#e2e8f0"
+    frame_color = "#4a5568"
+    timeout = 8
+[urgency_normal]
+    background = "#2d3748"
+    foreground = "#e2e8f0"
+    frame_color = "#63b3ed"
+    timeout = 10
+[urgency_critical]
+    background = "#2d3748"
+    foreground = "#fed7d7"
+    frame_color = "#fc8181"
+    timeout = 0

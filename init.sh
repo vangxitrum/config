@@ -43,6 +43,7 @@ sudo chmod +x ./scripts/*.sh
 ./scripts/nvim.sh
 ./scripts/ghostty.sh
 ./scripts/font.sh
+./scripts/dunst.sh
 
 # Install Fcitx5 for Telex (Vietnamese)
 sudo apt-get install -y fcitx5 fcitx5-unikey im-config
