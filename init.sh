@@ -27,6 +27,9 @@ cd config
 
 sudo chmod +x ./scripts/*.sh
 
+# terninal
+./scripts/zsh.sh
+
 # Languages
 ./scripts/node.sh
 ./scripts/python.sh
@@ -34,7 +37,6 @@ sudo chmod +x ./scripts/*.sh
 ./scripts/go.sh
 
 # Environment and Tools
-./scripts/zsh.sh
 ./scripts/docker.sh
 ./scripts/i3.sh
 ./scripts/tmux.sh
