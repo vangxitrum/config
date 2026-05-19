@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e # Exit on error
-sudo apt-get update && apt-get install -y \
+sudo apt-get update && sudo apt-get install -y \
   curl \
   wget \
   git \
@@ -13,19 +13,19 @@ sudo apt-get update && apt-get install -y \
   unzip \
   xclip \
   flameshot \
-  bsdmainutils
+  bsdmainutils \
+  fontconfig
 
-cd $HOME
+# Only clone if we are not already in a config directory
+if [ ! -f "./init.sh" ]; then
+  cd $HOME
+  mkdir -p setup
+  cd $HOME/setup
+  git clone https://github.com/vangxitrum/config.git
+  cd config
+fi
 
-mkdir -p setup
-
-cd $HOME/setup
-
-git clone https://github.com/vangxitrum/config.git
-
-cd config
-
-sudo chmod +x ./scripts/*.sh
+chmod +x ./scripts/*.sh
 
 # terninal
 ./scripts/zsh.sh

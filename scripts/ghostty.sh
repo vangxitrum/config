@@ -43,29 +43,31 @@ fi
 
 # Check for existing Ghostty
 if command -v ghostty &>/dev/null; then
-    CURRENT_VERSION=$(ghostty --version 2>/dev/null || echo "unknown")
-    print_status "Found existing Ghostty: $CURRENT_VERSION"
-    read -p "Reinstall Ghostty? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_status "Installation cancelled."
-        exit 0
-    fi
+    CURRENT_VERSION=$(ghostty --version 2>/dev/null | head -n 1 || echo "unknown")
+    print_status "Found existing Ghostty: $CURRENT_VERSION. Skipping installation."
+else
+    # Install via PPA (Recommended for Ubuntu)
+    echo "=================================="
+    echo "Installing Ghostty via PPA"
+    echo "=================================="
+
+    print_status "Adding PPA ppa:mkasberg/ghostty-ubuntu..."
+    sudo add-apt-repository -y ppa:mkasberg/ghostty-ubuntu
+
+    print_status "Updating package lists..."
+    sudo apt-get update
+
+    print_status "Installing Ghostty..."
+    sudo apt-get install -y ghostty
 fi
 
-# Install via PPA (Recommended for Ubuntu)
+# Configuration
 echo "=================================="
-echo "Installing Ghostty via PPA"
+echo "Configuring Ghostty"
 echo "=================================="
-
-print_status "Adding PPA ppa:mkasberg/ghostty-ubuntu..."
-sudo add-apt-repository -y ppa:mkasberg/ghostty-ubuntu
-
-print_status "Updating package lists..."
-sudo apt-get update
-
-print_status "Installing Ghostty..."
-sudo apt-get install -y ghostty
+print_status "Copying Ghostty configuration..."
+mkdir -p "$HOME/.config/ghostty"
+cp -r ./ghostty/config "$HOME/.config/ghostty/config"
 
 # Verify installation
 echo ""

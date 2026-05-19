@@ -47,7 +47,8 @@ mkdir -p "$FONT_DIR"
 
 # Download FiraCode Nerd Font
 FONT_NAME="FiraCode"
-FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraCode.zip"
+VERSION="v3.4.0"
+FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/${VERSION}/FiraCode.zip"
 TEMP_DIR=$(mktemp -d)
 
 print_status "Downloading $FONT_NAME Nerd Font..."

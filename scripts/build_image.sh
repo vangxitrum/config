@@ -8,6 +8,10 @@ IMAGE_NAME="my-config"
 USERNAME=${1:-tuan}
 
 echo "Building $IMAGE_NAME for user $USERNAME with verbose logging..."
+echo "Tip: If you encounter 'Could not resolve host' errors, you might need to check your DNS or use --network=host."
+
+# To use host network (helps with DNS issues):
+# DOCKER_BUILDKIT=1 docker build --network=host --progress=plain ...
 
 DOCKER_BUILDKIT=1 docker build \
     --progress=plain \

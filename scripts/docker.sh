@@ -33,10 +33,19 @@ else
     print_status "Installing Docker..."
 
     # Add Docker's official GPG key:
-    sudo apt-get update
+    print_status "Updating package lists..."
+    sudo apt-get update || (sleep 5 && sudo apt-get update)
+    
     sudo apt-get install -y ca-certificates curl gnupg
     sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    
+    print_status "Downloading Docker GPG key (with retries)..."
+    # Using --retry to handle transient DNS/network issues
+    if ! curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg; then
+        print_error "Failed to download Docker GPG key. This is likely a DNS or network issue."
+        print_status "Tip: If you are in a Docker build, try adding --network=host or checking your DNS settings."
+        exit 1
+    fi
     sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
     # Add the repository to Apt sources:
@@ -57,7 +66,7 @@ echo "Configuring Docker Permissions"
 echo "=================================="
 
 # Get the current username reliably
-CURRENT_USER=$(id -u -n)
+CURRENT_USER=$(whoami || echo $USER)
 
 # Ensure the docker group exists
 if ! getent group docker >/dev/null; then
@@ -65,8 +74,8 @@ if ! getent group docker >/dev/null; then
     sudo groupadd docker || true
 fi
 
-if [ "$CURRENT_USER" == "root" ]; then
-    print_status "Running as root, skipping user group assignment."
+if [ "$CURRENT_USER" == "root" ] || [ -z "$CURRENT_USER" ]; then
+    print_status "Skipping user group assignment (User: ${CURRENT_USER:-empty})."
 else
     print_status "Adding user $CURRENT_USER to docker group..."
     sudo usermod -aG docker "$CURRENT_USER"
