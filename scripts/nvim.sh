@@ -39,7 +39,7 @@ print_warning() {
 }
 
 # Neovim Target Version
-NVIM_TARGET_VERSION="v0.10.4"
+NVIM_TARGET_VERSION="v0.12.2"
 
 # Check if running on Ubuntu/Debian
 if [ -f /etc/os-release ]; then

@@ -34,8 +34,3 @@ map(
 	"<ESC><cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<CR>",
 	{ desc = "Comment Toggle" }
 )
-
--- Terminal
-map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
-
-map("n", "<leader>n", "<cmd>ToggleTerm 2 direction=float<CR>", { desc = "Toggle terminal" })

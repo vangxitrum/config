@@ -14,11 +14,13 @@ A modular and automated configuration setup for Linux (optimized for Ubuntu/Debi
 ### Environment & Tools
 
 - **Zsh**: Oh My Zsh, Powerlevel10k theme, and essential plugins.
-- **Neovim**: Custom Lua configuration (requires Neovim 0.10+).
+- **Neovim**: Custom Lua configuration (locked to **v0.12.2** with **lazy.nvim v11.17.5**).
 - **i3wm**: Window manager configuration including Polybar and Nitrogen.
 - **Input Method**: **Fcitx5** with Vietnamese Unikey. Toggle with **`Ctrl+Shift`**.
 - **Docker**: Automated installation and robust user group configuration.
 - **Dunst**: Desktop notification daemon with custom configuration.
+    - **Notification Handler**: Automatically attempts to focus the relevant application window in i3 when a notification arrives.
+- **s3cmd**: Command-line tool for managing Amazon S3 and other cloud storage.
 - **Fonts**: Automated Nerd Font installation (FiraCode).
 - **Ghostty**: Terminal emulator setup and configuration.
 
