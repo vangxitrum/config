@@ -33,41 +33,46 @@ echo ""
 
 # Install NVM (Node Version Manager)
 echo "=================================="
-echo "Installing NVM (Node.js)"
+echo "Installing/Updating NVM (Node.js)"
 echo "=================================="
-if [ -d "$HOME/.nvm" ]; then
-    print_status "NVM already installed, skipping..."
-else
-    print_status "Installing NVM..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+NVM_VERSION="v0.40.4"
+print_status "Installing/Updating NVM $NVM_VERSION..."
+curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/$NVM_VERSION/install.sh" | bash
 
-    # Load NVM
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+# Load NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-    print_success "NVM installed successfully!"
-    print_status "Usage: nvm install node (latest), nvm install 18, nvm use 18"
-fi
+print_status "Installing latest Node.js..."
+nvm install node
+nvm use node
+nvm alias default node
+
+print_success "NVM and Node.js (latest) installed/updated successfully!"
+print_status "Installed Node version: $(node -v)"
+print_status "Usage: nvm install 22, nvm use 22"
 echo ""
 
 # Shell Configuration
 echo "=================================="
 echo "Shell Configuration for Node.js"
 echo "=================================="
-print_status "Add the following to your ~/.bashrc or ~/.zshrc:"
-echo ""
-echo "# NVM"
+if ! grep -q "NVM_DIR" "$HOME/.profile"; then
+    print_status "Adding NVM configuration to ~/.profile..."
+    echo '' >>~/.profile
+    echo '# NVM' >>~/.profile
+    echo 'export NVM_DIR="$HOME/.nvm"' >>~/.profile
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >>~/.profile
+    echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >>~/.profile
+    print_success "Updated ~/.profile"
+else
+    print_status "NVM configuration already exists in ~/.profile"
+fi
+
+print_status "To use NVM in your current shell, run:"
 echo 'export NVM_DIR="$HOME/.nvm"'
 echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
 echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"'
 echo ""
-print_status "Then run: source ~/.bashrc (or source ~/.zshrc)"
-echo ""
-
-echo '' >>~/.profile
-echo '# NVM' >>~/.profile
-echo 'export NVM_DIR="$HOME/.nvm"' >>~/.profile
-echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >>~/.profile
-echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >>~/.profile
 
 print_success "Node.js installation complete!"
