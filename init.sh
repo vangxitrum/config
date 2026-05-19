@@ -28,10 +28,10 @@ cd config
 sudo chmod +x ./scripts/*.sh
 
 # Languages
-./scripts/go.sh
 ./scripts/node.sh
 ./scripts/python.sh
 ./scripts/luarocks.sh
+./scripts/go.sh
 
 # Environment and Tools
 ./scripts/zsh.sh
