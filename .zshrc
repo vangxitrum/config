@@ -40,4 +40,9 @@ fi
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
+# Source .profile for shared environment variables
+if [ -f "$HOME/.profile" ]; then
+    source "$HOME/.profile"
+fi
+
 

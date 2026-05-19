@@ -38,3 +38,16 @@ export PATH=$PATH:/usr/local/go/bin
 export BROWSER=/usr/bin/firefox
 
 export PATH
+
+# NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# GVM
+[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
+
+# PATH Setup Note
+# To add a new directory to your PATH, use the following format:
+# export PATH="$HOME/your/bin/path:$PATH"
+# This ensures your custom paths are searched first.
