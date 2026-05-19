@@ -46,17 +46,7 @@ echo "=================================="
 
 if command -v zsh &>/dev/null; then
   ZSH_VERSION=$(zsh --version)
-  print_warning "Zsh is already installed: $ZSH_VERSION"
-  read -p "Reinstall Zsh? (y/n) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    print_status "Skipping Zsh installation"
-  else
-    print_status "Updating package lists..."
-    sudo apt-get update
-    print_status "Installing Zsh and dependencies..."
-    sudo apt-get install -y zsh curl git wget unzip
-  fi
+  print_status "Zsh is already installed: $ZSH_VERSION, skipping installation..."
 else
   print_status "Updating package lists..."
   sudo apt-get update
@@ -73,15 +63,7 @@ echo "Installing Oh My Zsh"
 echo "=================================="
 
 if [ -d "$HOME/.oh-my-zsh" ]; then
-  print_warning "Oh My Zsh is already installed"
-  read -p "Reinstall Oh My Zsh? (y/n) " -n 1 -r
-  echo
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    print_status "Removing existing Oh My Zsh..."
-    rm -rf "$HOME/.oh-my-zsh"
-    print_status "Installing Oh My Zsh..."
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-  fi
+  print_status "Oh My Zsh is already installed, skipping..."
 else
   print_status "Installing Oh My Zsh..."
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended

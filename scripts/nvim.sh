@@ -54,14 +54,7 @@ echo "Checking for existing Neovim"
 echo "=================================="
 if command -v nvim &>/dev/null; then
   CURRENT_VERSION=$(nvim --version | head -n1)
-  print_status "Found existing Neovim: $CURRENT_VERSION"
-  read -p "Remove existing Neovim installation? (y/n) " -n 1 -r
-  echo
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    print_status "Removing old Neovim..."
-    sudo apt-get remove -y neovim 2>/dev/null || true
-    sudo rm -rf /usr/local/bin/nvim /usr/local/share/nvim 2>/dev/null || true
-  fi
+  print_status "Found existing Neovim: $CURRENT_VERSION. Skipping removal of existing installation."
 else
   print_status "No existing Neovim installation found"
 fi
