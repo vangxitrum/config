@@ -38,6 +38,9 @@ print_warning() {
   echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
+# Neovim Target Version
+NVIM_TARGET_VERSION="v0.10.4"
+
 # Check if running on Ubuntu/Debian
 if [ -f /etc/os-release ]; then
   . /etc/os-release
@@ -53,8 +56,12 @@ echo "=================================="
 echo "Checking for existing Neovim"
 echo "=================================="
 if command -v nvim &>/dev/null; then
-  CURRENT_VERSION=$(nvim --version | head -n1)
-  print_status "Found existing Neovim: $CURRENT_VERSION. Skipping removal of existing installation."
+  CURRENT_VERSION=$(nvim --version | head -n1 | awk '{print $2}')
+  if [ "$CURRENT_VERSION" == "$NVIM_TARGET_VERSION" ]; then
+    print_status "Neovim $NVIM_TARGET_VERSION is already installed. Skipping..."
+    exit 0
+  fi
+  print_status "Found existing Neovim: $CURRENT_VERSION. Proceeding with installation of $NVIM_TARGET_VERSION..."
 else
   print_status "No existing Neovim installation found"
 fi
@@ -91,9 +98,9 @@ print_status "Cloning Neovim repository..."
 git clone https://github.com/neovim/neovim.git
 cd neovim
 
-# Checkout stable version (v0.10.x)
-print_status "Checking out stable release..."
-git checkout stable
+# Checkout target version
+print_status "Checking out version: $NVIM_TARGET_VERSION"
+git checkout "$NVIM_TARGET_VERSION"
 
 NVIM_VERSION=$(git describe --tags)
 print_status "Building Neovim version: $NVIM_VERSION"
