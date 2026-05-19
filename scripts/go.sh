@@ -47,32 +47,32 @@ else
 
     source "$HOME/.gvm/scripts/gvm"
 
-    echo ">>> Appending GVM source to ~/.zshrc..."
-    echo '[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"' >>~/.zshrc
+    print_status ">>> Appending GVM source to ~/.zshrc..."
+    echo '[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"' >>$HOME/.zshrc
 
-    echo ">>> Switching to go1.4 (bootstrap)..."
+    print_status ">>> Switching to go1.4 (bootstrap)..."
     gvm use go1.4
     export GOROOT_BOOTSTRAP=$GOROOT
 
-    echo ">>> Installing go1.17.13..."
+    print_status ">>> Installing go1.17.13..."
     gvm install go1.17.13
     gvm use go1.17.13
     export GOROOT_BOOTSTRAP=$GOROOT
 
-    echo ">>> Installing go1.20..."
+    print_status ">>> Installing go1.20..."
     gvm install go1.20
     gvm use go1.20
     export GOROOT_BOOTSTRAP=$GOROOT
 
-    echo ">>> Installing go1.25..."
+    print_status ">>> Installing go1.25..."
     gvm install go1.25
 
-    echo ">>> Setting go1.25 as default..."
+    print_status ">>> Setting go1.25 as default..."
     gvm use go1.25 --default
 
-    echo ""
-    echo "✓ Done! go1.25 is now the default."
-    echo "  Run 'source ~/.zshrc' or open a new terminal to apply changes."
+    print_status ""
+    print_status "✓ Done! go1.25 is now the default."
+    print_status "  Run 'source ~/.zshrc' or open a new terminal to apply changes."
 
     print_success "GVM installed successfully!"
     print_status "Usage: gvm install go1.21.0, gvm use go1.21.0 --default"
