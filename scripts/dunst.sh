@@ -39,4 +39,9 @@ print_status "Copying Dunst configuration..."
 mkdir -p "$HOME/.config/dunst"
 cp -r ./dunst/dunstrc "$HOME/.config/dunst/dunstrc"
 
+print_status "Copying Dunst notification handler..."
+mkdir -p "$HOME/.config/scripts"
+cp ./scripts/dunst_handler.sh "$HOME/.config/scripts/dunst_handler.sh"
+chmod +x "$HOME/.config/scripts/dunst_handler.sh"
+
 print_success "Dunst installation and configuration complete!"

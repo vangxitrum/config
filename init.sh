@@ -2,6 +2,7 @@
 
 set -e # Exit on error
 sudo apt-get update && sudo apt-get install -y \
+  ripgrep \
   curl \
   wget \
   git \
@@ -44,6 +45,7 @@ chmod +x ./scripts/*.sh
 ./scripts/ghostty.sh
 ./scripts/font.sh
 ./scripts/dunst.sh
+./scripts/s3cmd.sh
 
 # Install Fcitx5 for Telex (Vietnamese)
 sudo apt-get install -y fcitx5 fcitx5-unikey im-config
