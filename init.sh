@@ -51,6 +51,9 @@ sudo apt-get install -y fcitx5 fcitx5-unikey im-config
 # Set Fcitx5 as default input method
 im-config -n fcitx5
 
+# Configure Fcitx5 (Shortcuts, Telex, etc.)
+./scripts/fcitx5.sh
+
 # Add Fcitx5 environment variables to .profile
 echo '
 # Fcitx5

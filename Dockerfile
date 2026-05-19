@@ -56,6 +56,7 @@ RUN ./scripts/nvim.sh
 RUN ./scripts/ghostty.sh
 RUN ./scripts/font.sh
 RUN ./scripts/dunst.sh
+RUN ./scripts/fcitx5.sh
 
 # Run remaining setup from init.sh (Vietnamese input, etc.)
 # We skip the scripts we already ran

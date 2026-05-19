@@ -220,10 +220,10 @@ client.background       #ffffff
 
 # set keyboard layout
 exec "setxkbmap -layout us,vi"
-exec "setxkbmap -option 'grp:alt_shift_toggle'"
+exec "setxkbmap -option 'grp:ctrl_shift_toggle'"
 
 # set keyboard layout
-exec --no-startup-id ibus-daemon -drx
+exec --no-startup-id fcitx5 -d
 
 
 
