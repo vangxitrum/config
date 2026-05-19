@@ -18,6 +18,7 @@ ENV GTK_IM_MODULE=fcitx \
 # Install core system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    ripgrep \
     wget \
     git \
     make \
@@ -86,6 +87,7 @@ RUN ./scripts/nvim.sh
 RUN ./scripts/ghostty.sh
 RUN ./scripts/font.sh
 RUN ./scripts/dunst.sh
+RUN ./scripts/s3cmd.sh
 RUN ./scripts/fcitx5.sh
 
 # ==========================================
