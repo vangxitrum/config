@@ -6,6 +6,7 @@ return {
 		-- Define your custom installation directory
 		-- (Example: stores inside ~/.local/share/nvim/custom_parsers)
 		local custom_dir = vim.fn.stdpath("data") .. "/custom_parsers"
+		vim.opt.rtp:prepend(custom_dir)
 
 		require("nvim-treesitter.config").setup({
 			-- A list of parser names, or "all"
@@ -21,28 +22,30 @@ return {
 				"go",
 			},
 			install_dir = custom_dir,
+		})
 
-			-- Install parsers synchronously (only applied to `ensure_installed`)
-			sync_install = false,
-
-			-- Automatically install missing parsers when entering buffer
-			-- Recommendation: set to false if you don"t have `tree-sitter` CLI installed locally
-			auto_install = true,
-
-			indent = {
-				enable = true,
-			},
-
-			highlight = {
-				-- `false` will disable the whole extension
-				enable = true,
-
-				-- Setting this to true will run `:h syntax` and tree-sitter at the same time.
-				-- Set this to `true` if you depend on "syntax" being enabled (like for indentation).
-				-- Using this option may slow down your editor, and you may see some duplicate highlights.
-				-- Instead of true it can also be a list of languages
-				additional_vim_regex_highlighting = { "markdown" },
-			},
+		-- main branch removed the `highlight`/`indent` setup keys; start
+		-- treesitter per-buffer via FileType, otherwise normal buffers fall
+		-- back to vim regex syntax while telescope's previewer (which calls
+		-- vim.treesitter.start itself) ends up more colorful than the editor.
+		local extra_regex = { markdown = true }
+		vim.api.nvim_create_autocmd("FileType", {
+			group = vim.api.nvim_create_augroup("chum_treesitter_start", { clear = true }),
+			callback = function(args)
+				local ft = vim.bo[args.buf].filetype
+				local lang = vim.treesitter.language.get_lang(ft) or ft
+				if not lang or lang == "" then
+					return
+				end
+				local ok, has_parser = pcall(vim.treesitter.language.add, lang)
+				if not ok or not has_parser then
+					return
+				end
+				pcall(vim.treesitter.start, args.buf, lang)
+				if extra_regex[ft] then
+					vim.bo[args.buf].syntax = "ON"
+				end
+			end,
 		})
 	end,
 }
