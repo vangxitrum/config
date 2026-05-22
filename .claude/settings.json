@@ -1,0 +1,29 @@
+{
+  "enabledPlugins": {
+    "gopls-lsp@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "theme": "dark",
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "msg=$(jq -r '.message // \"Input needed\"'); loc=$([ -n \"$TMUX_PANE\" ] && tmux display-message -p -t \"$TMUX_PANE\" '#S:#W' 2>/dev/null); notify-send -a \"Claude Code\" -u critical \"Claude Code${loc:+ [$loc]}\" \"$msg\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "loc=$([ -n \"$TMUX_PANE\" ] && tmux display-message -p -t \"$TMUX_PANE\" '#S:#W' 2>/dev/null); notify-send -a \"Claude Code\" -u low \"Claude Code${loc:+ [$loc]}\" \"Turn complete\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
