@@ -4,7 +4,13 @@
       "Bash(nvim --headless -c 'lua vim.defer_fn\\(function\\(\\) vim.cmd\\(\"messages\"\\) vim.cmd\\(\"qa!\"\\) end, 2000\\)')",
       "Bash(nvim *)",
       "Read(//tmp/**)",
-      "Bash(echo 'FOO=bar')"
+      "Bash(echo 'FOO=bar')",
+      "Bash(command -v trash)",
+      "Bash(command -v gio)",
+      "Bash(command -v trash-put)",
+      "Bash(command -v gvfs-trash)",
+      "Bash(trash --version)",
+      "Bash(gio --version)"
     ]
   }
 }

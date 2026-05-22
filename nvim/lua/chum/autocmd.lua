@@ -94,6 +94,32 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 	end,
 })
+-- Netrw: Shift+D sends to system trash (via gio) instead of permanent delete
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "netrw",
+	group = vim.api.nvim_create_augroup("netrw_trash_delete", { clear = true }),
+	callback = function(ev)
+		vim.keymap.set("n", "D", function()
+			local ok, fname = pcall(vim.fn["netrw#Call"], "NetrwGetWord")
+			if not ok or fname == nil or fname == "" or fname == "./" or fname == "../" then
+				return
+			end
+			local dir = vim.b.netrw_curdir or vim.fn.getcwd()
+			local target = dir .. "/" .. (fname:gsub("/$", ""))
+			if vim.fn.confirm("Trash " .. target .. "?", "&Yes\n&No", 2) ~= 1 then
+				return
+			end
+			local out = vim.fn.system({ "gio", "trash", "--", target })
+			if vim.v.shell_error ~= 0 then
+				vim.notify("Trash failed: " .. out, vim.log.levels.ERROR)
+			else
+				vim.notify("Trashed: " .. target)
+				vim.cmd.edit(dir)
+			end
+		end, { buffer = ev.buf, desc = "Send file to trash (gio)" })
+	end,
+})
+
 -- Diagnostics
 vim.diagnostic.config({
 	-- Use the default configuration
