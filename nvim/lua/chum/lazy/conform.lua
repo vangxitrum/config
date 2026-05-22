@@ -19,16 +19,21 @@ return {
 	opts = {
 		formatters = {
 			golines = { prepend_args = { "--max-len=80" } },
-			["golangci-lint"] = {
-				append_args = {
-					"--config",
-					os.getenv("HOME") .. "/.golangci.yaml",
-				},
-			},
+			-- ["golangci-lint"] = {
+			-- 	append_args = {
+			-- 		"--config",
+			-- 		os.getenv("HOME") .. "/.golangci.yaml",
+			-- 	},
+			-- },
 		},
 		formatters_by_ft = {
 			-- Go
-			go = { "goimports", "gofumpt", "golines", "golangci-lint" },
+			go = {
+				"goimports",
+				"gofumpt",
+				"golines",
+				-- "golangci-lint",
+			},
 
 			-- Lua
 			lua = { "stylua" },

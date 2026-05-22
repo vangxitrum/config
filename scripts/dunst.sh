@@ -31,6 +31,17 @@ print_status "Installing Dunst and libnotify..."
 sudo apt-get update
 sudo apt-get install -y dunst libnotify-bin
 
+# Disable default Ubuntu notification daemon
+print_status "Disabling default Ubuntu notification daemon..."
+# Remove notify-osd if it exists, as it often conflicts with dunst
+sudo apt-get purge -y notify-osd notification-daemon || true
+
+# If there are any other services providing notifications, we should handle them
+# Some systems have a generic service file that points to the default daemon
+if [ -f /usr/share/dbus-1/services/org.freedesktop.Notifications.service ]; then
+    sudo mv /usr/share/dbus-1/services/org.freedesktop.Notifications.service /usr/share/dbus-1/services/org.freedesktop.Notifications.service.bak || true
+fi
+
 # Configuration
 echo "=================================="
 echo "Configuring Dunst"
