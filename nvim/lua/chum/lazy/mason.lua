@@ -7,6 +7,8 @@ return {
 		build = ":MasonUpdate",
 		opts = {
 			ensure_installed = {
+				-- treesitter
+				"tree-sitter-cli",
 				-- LSP servers (matching your vim.lsp.enable() config)
 				"lua-language-server", -- Lua LSP
 				"gopls", -- Go LSP

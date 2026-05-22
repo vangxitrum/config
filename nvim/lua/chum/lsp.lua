@@ -1,12 +1,12 @@
 vim.lsp.enable({
 	"gopls",
 	"lua_ls",
-	"ts_ls",
-	"pylsp",
-	"cssls",
-	"html",
-	"eslint",
-	"tailwindcss",
+	-- "ts_ls",
+	-- "pylsp",
+	-- "cssls",
+	-- "html",
+	-- "eslint",
+	-- "tailwindcss",
 })
 
 vim.diagnostic.config({

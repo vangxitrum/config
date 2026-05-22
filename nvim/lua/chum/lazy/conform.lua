@@ -1,6 +1,8 @@
 return {
 	"stevearc/conform.nvim",
+
 	event = { "BufWritePre" },
+	version = "v9.1.0",
 	cmd = { "ConformInfo" },
 	keys = {
 		{
@@ -50,7 +52,6 @@ return {
 			html = { "prettierd" },
 			css = { "prettierd" },
 			scss = { "prettierd" },
-			env = { "" },
 
 			-- Python
 			python = { "isort", "black" },

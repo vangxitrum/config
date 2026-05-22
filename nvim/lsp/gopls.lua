@@ -1,7 +1,7 @@
 return {
-	cmd = { "gopls" }, -- Command to start the language server
-	filetypes = { "go", "gomod", "gowork", "gotmpl", "gosum" }, -- File types that this server will handle
-	root_markers = { "go.mod", "go.work", ".git" },
+	cmd = { "gopls" },
+	filetypes = { "go", "gomod", "gowork" },
+	root_markers = { "go.work", "go.mod", ".git" },
 	settings = {
 		gopls = {
 			completeUnimported = true,
