@@ -1,26 +1,19 @@
 #!/bin/bash
 
-# Get current Fcitx5 input method using fcitx5-remote
-# fcitx5-remote returns:
-# 0 for inactive (usually the first IM, e.g., English)
-# 1 for active (usually the second IM, e.g., Unikey)
-# 2 for inactive (redundant but possible)
+# Use the IM name as the source of truth (more reliable than state code).
+# Fallback to state if fcitx5-remote -n unavailable.
+# fcitx5-remote state codes: 0=fcitx not running, 1=passthrough (keyboard
+# layout), 2=intercepting (real IM like bamboo).
 
-state=$(fcitx5-remote)
-
-case $state in
-    1)
-        echo "VI"
-        ;;
-    2|0)
-        echo "EN"
-        ;;
-    *)
-        # Fallback to checking the current IM name if fcitx5-remote -n is available
-        name=$(fcitx5-remote -n 2>/dev/null)
-        case $name in
-            *unikey*|*vi*) echo "VI" ;;
-            *) echo "EN" ;;
-        esac
-        ;;
-esac
+name=$(fcitx5-remote -n 2>/dev/null)
+if [ -n "$name" ]; then
+    case $name in
+        *bamboo*|*unikey*|*vi*) echo "VI" ;;
+        *) echo "EN" ;;
+    esac
+else
+    case $(fcitx5-remote) in
+        2) echo "VI" ;;
+        *) echo "EN" ;;
+    esac
+fi
