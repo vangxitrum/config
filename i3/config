@@ -244,9 +244,3 @@ exec --no-startup-id slack &
 # hide window title
 for_window [class=".*"] border pixel 0
 
-# dunst keybindings
-bindsym $mod+n exec --no-startup-id dunstctl close
-bindsym $mod+Shift+n exec --no-startup-id dunstctl close-all
-bindsym $mod+ctrl+n exec --no-startup-id dunstctl history-pop
-bindsym Control+n exec --no-startup-id dunstctl close-all
-bindsym Control+Shift+n exec --no-startup-id dunstctl history-pop
