@@ -108,6 +108,10 @@ bindsym $mod+a focus parent
 # snipshot
 bindsym $mod+Shift+s exec flameshot
 
+# dismiss one notification per press; shift restores the last dismissed one
+bindsym Control+n exec --no-startup-id dunstctl close
+bindsym Control+Shift+n exec --no-startup-id dunstctl history-pop
+
 # focus the child container
 #bindsym $mod+d focus child
 
