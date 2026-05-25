@@ -10,5 +10,17 @@ return {
 			lsp_diagnostics = true, -- Enable Native LSP diagnostics (Default: true)
 			ale_diagnostics = false, -- Enable ALE diagnostics (Default: false)
 		})
+		local bufname = require("sections._bufname")
+		bufname.get_buffer_name = function()
+			local path = vim.fn.expand("%:~:.")
+			if path == "" then
+				local ft = vim.bo.ft
+				return ft ~= "" and ft .. " " or ""
+			end
+			if path:find("NvimTree") then
+				return "File Tree "
+			end
+			return path .. " "
+		end
 	end,
 }
