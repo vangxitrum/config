@@ -108,9 +108,13 @@ bindsym $mod+a focus parent
 # snipshot
 bindsym $mod+Shift+s exec flameshot
 
-# dismiss one notification per press; shift restores the last dismissed one
-bindsym Control+n exec --no-startup-id dunstctl close
+# dismiss one notification per press (also clears jump state so a closed
+# notification cannot be jumped to). Shift restores the last dismissed one.
+bindsym Control+n exec --no-startup-id ~/work/config/scripts/dunst-close-one.sh
 bindsym Control+Shift+n exec --no-startup-id dunstctl history-pop
+
+# jump to the tmux window referenced by the most recent x-tmux-target notification
+bindsym $mod+g exec --no-startup-id ~/work/config/scripts/tmux-jump-last-notify.sh
 
 # focus the child container
 #bindsym $mod+d focus child
