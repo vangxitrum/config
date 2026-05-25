@@ -19,7 +19,13 @@ A modular and automated configuration setup for Linux (optimized for Ubuntu/Debi
 - **Input Method**: **Fcitx5** with Vietnamese Unikey. Toggle with **`Ctrl+Shift`**.
 - **Docker**: Automated installation and robust user group configuration.
 - **Dunst**: Desktop notification daemon with custom configuration.
-    - **Notification Handler**: Automatically attempts to focus the relevant application window in i3 when a notification arrives.
+    - `Ctrl+N`: Dismiss one notification at a time.
+    - `Ctrl+Shift+N`: Restore the last dismissed notification.
+- **Tmux Notification Jump**: Jump to the exact tmux window/pane that triggered a notification.
+    - `Super+G` (i3) or `C-s g` (tmux): Jump to the pane referenced by the most recent notification.
+    - `C-s b` (tmux): Jump back to the previous pane.
+    - Any tool can opt in by adding `-c "tmux-target:$(tmux display -p '#{window_id}')"` to its `notify-send` call.
+    - Claude Code hooks (`claude-notify.sh`) are pre-wired with persistent notifications and pane tracking.
 - **s3cmd**: Command-line tool for managing Amazon S3 and other cloud storage.
 - **Fonts**: Automated Nerd Font installation (FiraCode).
 - **Ghostty**: Terminal emulator setup and configuration.
@@ -65,12 +71,13 @@ docker run -it my-config
 
 ## 📂 Project Structure
 
-- `scripts/`: Modular bash scripts for installing specific tools.
+- `scripts/`: Modular bash scripts for installing specific tools and notification/jump utilities.
 - `nvim/`: Neovim Lua configuration.
 - `i3/` & `polybar/`: Window manager and status bar configs.
 - `zsh/`: Zsh and Oh My Zsh customization.
 - `dunst/`: Notification daemon configuration.
-- `tmux/`: Tmux and Tmuxinator configurations.
+- `tmux/`: Tmux and Tmuxinator configurations (includes pane jump bindings and visual pane styling).
+- `scripts/`: Includes `claude-notify.sh`, `tmux-jump-last-notify.sh`, `tmux-jump-back.sh`, and `dunst-close-one.sh`.
 - `Dockerfile`: Multi-stage build for the environment.
 
 ## 📝 Troubleshooting
