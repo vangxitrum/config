@@ -52,5 +52,5 @@ args=(-a "Claude Code" -u "$urgency" -c "tmux-target:$tgt" -t 0 -p)
 new_id=$(notify-send "${args[@]}" "Claude Code [$loc]" "$body" 2>/dev/null || true)
 
 if [ -n "$new_id" ]; then
-	printf '%s\n%s\n' "$tgt" "$new_id" > "$state_file"
+	printf '%s\n%s\n%s\n' "$tgt" "$new_id" "$TMUX_PANE" > "$state_file"
 fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Jump to the tmux window referenced by the currently-active notification
-# tracked in $XDG_CACHE_HOME/tmux-jump/active (two lines: window_id, notify_id).
+# tracked in $XDG_CACHE_HOME/tmux-jump/active (three lines: window_id, notify_id, pane_id).
 #
 # - Jumps to the window inside tmux (uses $TMUX if set, otherwise routes
 #   through any attached client and focuses the terminal workspace).
@@ -25,6 +25,7 @@ state_file="$state_dir/active"
 
 target=$(awk 'NR==1 {print; exit}' "$state_file")
 notify_id=$(awk 'NR==2 {print; exit}' "$state_file")
+pane_id=$(awk 'NR==3 {print; exit}' "$state_file")
 
 if [ -z "$target" ]; then
 	rm -f "$state_file"
@@ -37,12 +38,15 @@ if ! tmux list-windows -a -F '#{window_id}' 2>/dev/null | grep -qx "$target"; th
 fi
 
 if [ -n "${TMUX:-}" ]; then
-	# Save origin so C-s b can return here.
-	tmux display-message -p '#{window_id}' > "$state_dir/origin"
+	# Save origin (window + pane) so C-s b can return here.
+	tmux display-message -p '#{window_id}
+#{pane_id}' > "$state_dir/origin"
 	tmux switch-client -t "$target"
 else
-	# Save origin from the first attached client's current window.
-	tmux list-clients -F '#{window_id}' 2>/dev/null | head -1 > "$state_dir/origin"
+	# Save origin (window + pane) from the first attached client.
+	origin_win=$(tmux list-clients -F '#{window_id}' 2>/dev/null | head -1)
+	origin_pane=$(tmux list-clients -F '#{pane_id}' 2>/dev/null | head -1)
+	printf '%s\n%s\n' "$origin_win" "$origin_pane" > "$state_dir/origin"
 
 	i3-msg 'workspace number 1:terminal' >/dev/null 2>&1 || true
 	clients=$(tmux list-clients -F '#{client_tty}' 2>/dev/null || true)
@@ -57,6 +61,11 @@ else
 		ghostty -e bash -lc "tmux attach -t '$session' \\; select-window -t '$target'" \
 			>/dev/null 2>&1 &
 	fi
+fi
+
+# Select the exact pane if it still exists.
+if [ -n "${pane_id:-}" ]; then
+	tmux select-pane -t "$pane_id" 2>/dev/null || true
 fi
 
 if [ -n "$notify_id" ]; then
