@@ -169,6 +169,7 @@ assign [class="Postman"] $ws5
 assign [class="Nautilus"] $ws6
 assign [class="aioz_worker_node"] $ws7
 
+focus_on_window_activation focus
 
 # move focused container to workspace
 bindsym $mod+Shift+1 move container to workspace number $ws1
