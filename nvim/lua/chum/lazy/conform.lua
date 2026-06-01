@@ -20,7 +20,7 @@ return {
 	},
 	opts = {
 		formatters = {
-			golines = { prepend_args = { "--max-len=80" } },
+			golines = { prepend_args = { "--max-len=80", "--base-formatter=gofumpt" } },
 			-- ["golangci-lint"] = {
 			-- 	append_args = {
 			-- 		"--config",
@@ -32,7 +32,6 @@ return {
 			-- Go
 			go = {
 				"goimports",
-				"gofumpt",
 				"golines",
 				-- "golangci-lint",
 			},
@@ -67,7 +66,7 @@ return {
 			lsp_format = "fallback",
 		},
 		format_on_save = {
-			timeout_ms = 1000,
+			timeout_ms = 3000,
 			lsp_format = "fallback",
 		},
 	},

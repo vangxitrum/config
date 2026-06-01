@@ -4,6 +4,7 @@ return {
 	root_markers = { "go.work", "go.mod", ".git" },
 	settings = {
 		gopls = {
+			buildFlags = { "-tags=integration,unit" },
 			completeUnimported = true,
 			usePlaceholders = true,
 			analyses = {

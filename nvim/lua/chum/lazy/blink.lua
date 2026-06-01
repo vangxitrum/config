@@ -45,6 +45,8 @@ return {
 				},
 				keymap = {
 					["<C-f>"] = {},
+					["<C-j>"] = { "select_next", "fallback" },
+					["<C-k>"] = { "select_prev", "fallback" },
 				},
 				cmdline = {
 					enabled = false,
