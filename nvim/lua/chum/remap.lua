@@ -17,6 +17,11 @@ map("n", "<leader>z", "<cmd>tab split<CR>", { desc = "[Z]oom current file in new
 -- File operator
 map("n", "<leader>pv", vim.cmd.Ex)
 map("n", "<C-c>", "<cmd>%y+<CR>", { desc = "File Copy whole" })
+map("n", "<leader>fp", function()
+	local path = vim.fn.expand("%:p")
+	vim.fn.setreg("+", path)
+	vim.notify(path, vim.log.levels.INFO)
+end, { desc = "[F]ile [P]ath copy to clipboard" })
 map(
 	"n",
 	"<leader>v",

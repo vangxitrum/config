@@ -3,3 +3,4 @@ font-size = 10
 theme = Catppuccin Mocha
 window-decoration = false
 keybind = ctrl+shift+n=unbind
+background-opacity = 0.86

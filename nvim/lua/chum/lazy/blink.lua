@@ -47,6 +47,8 @@ return {
 					["<C-f>"] = {},
 					["<C-j>"] = { "select_next", "fallback" },
 					["<C-k>"] = { "select_prev", "fallback" },
+					["<C-n>"] = { "select_next", "fallback" },
+					["<C-p>"] = { "select_prev", "fallback" },
 				},
 				cmdline = {
 					enabled = false,
