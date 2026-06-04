@@ -220,6 +220,10 @@ mode "resize" {
 
 bindsym $mod+r mode "resize"
 
+# move current workspace to other monitor (temporary swap)
+bindsym $mod+shift+comma move workspace to output left
+bindsym $mod+shift+period move workspace to output right
+
 # color
 # class                 border  backgr. text    indicator child_border
 client.focused          #665c54 #665c54 #fbf1c7 #665c54   #665c54
