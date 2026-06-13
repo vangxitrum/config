@@ -30,20 +30,6 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 -- Automatically reload file if changed outside of neovim
 vim.cmd("set autoread | au CursorHold * checktime")
 
--- Attach lsp
-vim.api.nvim_create_autocmd("LspAttach", {
-	callback = function(ev)
-		local client = vim.lsp.get_client_by_id(ev.data.client_id)
-		if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_completion) then
-			vim.opt.completeopt = { "menu", "menuone", "noinsert", "fuzzy", "popup" }
-			vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
-			vim.keymap.set("i", "<C-Space>", function()
-				vim.lsp.completion.get()
-			end)
-		end
-	end,
-})
-
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
 
@@ -117,6 +103,14 @@ vim.api.nvim_create_autocmd("FileType", {
 				vim.cmd.edit(dir)
 			end
 		end, { buffer = ev.buf, desc = "Send file to trash (gio)" })
+	end,
+})
+
+-- Refresh statusline git branch after returning from lazygit (external or toggleterm)
+vim.api.nvim_create_autocmd({ "FocusGained", "TermClose" }, {
+	group = vim.api.nvim_create_augroup("statusline_git_refresh", { clear = true }),
+	callback = function()
+		vim.cmd("redrawstatus!")
 	end,
 })
 
