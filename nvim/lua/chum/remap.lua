@@ -29,6 +29,20 @@ map(
 	{ desc = "[G]oto [D]efinition in new tab" }
 )
 
+-- LSP restart (stop attached clients, reload buffer to re-trigger attach)
+map("n", "<leader>cr", function()
+	local clients = vim.lsp.get_clients({ bufnr = 0 })
+	for _, client in ipairs(clients) do
+		client:stop()
+	end
+	vim.defer_fn(function()
+		vim.cmd("edit")
+	end, 100)
+end, { desc = "[C]ode LSP [R]estart" })
+
+-- Reload current buffer from disk
+map("n", "<leader>ce", "<cmd>edit<CR>", { desc = "[C]ode Buffer R[e]load" })
+
 -- Comment
 map("n", "<leader>/", function()
 	require("Comment.api").toggle.linewise.current()
