@@ -21,6 +21,12 @@ return {
 			if path:find("NvimTree") then
 				return "File Tree "
 			end
+			if vim.bo.filetype == "oil" then
+				local dir = require("oil").get_current_dir()
+				if dir then
+					return vim.fn.fnamemodify(dir, ":~:.") .. modified .. " "
+				end
+			end
 			return path .. modified .. " "
 		end
 	end,
