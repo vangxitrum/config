@@ -15,7 +15,8 @@ map("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
 map("n", "<leader>z", "<cmd>tab split<CR>", { desc = "[Z]oom current file in new tab (use :q to unzoom)" })
 
 -- File operator
-map("n", "<leader>pv", vim.cmd.Ex)
+map("n", "<leader>pv", "<cmd>Oil<CR>", { desc = "Open file explorer" })
+map("n", "-", "<cmd>Oil<CR>", { desc = "Open parent directory" })
 map("n", "<C-c>", "<cmd>%y+<CR>", { desc = "File Copy whole" })
 map("n", "<leader>fp", function()
 	local path = vim.fn.expand("%:p")
