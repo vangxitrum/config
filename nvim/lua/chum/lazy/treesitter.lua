@@ -20,6 +20,8 @@ return {
 				"jsdoc",
 				"bash",
 				"go",
+				"markdown",
+				"markdown_inline",
 			},
 			install_dir = custom_dir,
 		})
