@@ -28,7 +28,18 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 })
 
 -- Automatically reload file if changed outside of neovim
-vim.cmd("set autoread | au CursorHold * checktime")
+vim.opt.autoread = true
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+	group = vim.api.nvim_create_augroup("auto_reload_file", { clear = true }),
+	pattern = "*",
+	command = "silent! checktime",
+})
+
+-- NOTE: No manual LSP re-sync on external edits is needed. When `autoread`
+-- reloads a buffer after an agent/external write, Neovim's native LSP client
+-- sends a full-document didChange via its on_reload handler automatically.
+-- A previous FileChangedShellPost detach/re-attach autocmd here caused the
+-- server to be torn down and respawned on every external edit (restart loop).
 
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),

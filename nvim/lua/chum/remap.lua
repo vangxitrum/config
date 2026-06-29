@@ -30,15 +30,18 @@ map(
 	{ desc = "[G]oto [D]efinition in new tab" }
 )
 
--- LSP restart (stop attached clients, reload buffer to re-trigger attach)
+-- LSP restart all buffers
 map("n", "<leader>cr", function()
-	local clients = vim.lsp.get_clients({ bufnr = 0 })
-	for _, client in ipairs(clients) do
+	for _, client in ipairs(vim.lsp.get_clients()) do
 		client:stop()
 	end
 	vim.defer_fn(function()
-		vim.cmd("edit")
-	end, 100)
+		for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+			if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "" then
+				vim.api.nvim_exec_autocmds("BufReadPost", { buf = buf })
+			end
+		end
+	end, 200)
 end, { desc = "[C]ode LSP [R]estart" })
 
 -- Reload current buffer from disk
