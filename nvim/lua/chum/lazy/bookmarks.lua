@@ -3,14 +3,32 @@ return {
 	event = "VimEnter",
 	config = function()
 		require("bookmarks").setup({
-			save_file = vim.fn.stdpath("data") .. "/bookmarks",
-			on_attach = function()
+			-- sign_priority = 8,  --set bookmark sign priority to cover other sign
+			save_file = vim.fn.expand("$HOME/.bookmarks"), -- bookmarks save file path
+			keywords = {
+				["@t"] = "☑️ ", -- mark annotation startswith @t ,signs this icon as `Todo`
+				["@w"] = "⚠️ ", -- mark annotation startswith @w ,signs this icon as `Warn`
+				["@f"] = "⛏ ", -- mark annotation startswith @f ,signs this icon as `Fix`
+				["@n"] = " ", -- mark annotation startswith @n ,signs this icon as `Note`
+			},
+			on_attach = function(bufnr)
 				local bm = require("bookmarks")
-				vim.keymap.set("n", "<leader>m", bm.bookmark_ann, { desc = "Toggle bookmark with message" })
-				vim.keymap.set("n", "<C-b>", bm.bookmark_list, { desc = "Bookmark list" })
-				vim.keymap.set("n", "<leader>mc", bm.bookmark_clean, { desc = "Clean bookmarks in current buffer" })
-				vim.keymap.set("n", "]b", bm.bookmark_next, { desc = "Next bookmark" })
-				vim.keymap.set("n", "[b", bm.bookmark_prev, { desc = "Previous bookmark" })
+				local map = vim.keymap.set
+				map("n", "mm", function()
+					local lnum = vim.api.nvim_win_get_cursor(0)[1]
+					local mark = bm.bookmark_line(lnum)
+					if mark and mark.a then
+						bm.bookmark_toggle()
+					else
+						bm.bookmark_ann()
+					end
+				end, { desc = "Toggle bookmark (with message on new)" })
+				map("n", "mi", bm.bookmark_ann) -- add or edit mark annotation at current line
+				map("n", "mc", bm.bookmark_clean) -- clean all marks in local buffer
+				map("n", "mn", bm.bookmark_next) -- jump to next mark in local buffer
+				map("n", "mp", bm.bookmark_prev) -- jump to previous mark in local buffer
+				map("n", "ml", bm.bookmark_list) -- show marked file list in quickfix window
+				map("n", "mx", bm.bookmark_clear_all) -- removes all bookmarks
 			end,
 		})
 	end,
