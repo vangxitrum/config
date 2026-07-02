@@ -87,4 +87,14 @@ if [ -n "$tgt" ]; then
 	printf '%s\n%s\n%s\n' "$tgt" "$new_id" "$pane" > "$state_file"
 fi
 
+# --- live per-window tab indicator (agent-state.sh) --------------------------
+# stop -> clear the tab; notification -> show the "needs input" icon. Keyed to
+# this pane's window via $TMUX_PANE (same as the jump context above).
+if [ -n "$tgt" ]; then
+	case "$event" in
+		stop)         "$(dirname "$0")/agent-state.sh" idle >/dev/null 2>&1 || true ;;
+		notification) "$(dirname "$0")/agent-state.sh" input "$body" >/dev/null 2>&1 || true ;;
+	esac
+fi
+
 exit 0

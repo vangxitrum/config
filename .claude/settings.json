@@ -1,10 +1,37 @@
 {
-  "enabledPlugins": {
-    "gopls-lsp@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true
+  "permissions": {
+    "allow": [
+      "Bash(/home/tuan/.claude/writing-coach/wlog:*)"
+    ]
   },
-  "theme": "dark",
+  "model": "opus[1m]",
   "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *.go) [ -f \"$f\" ] && nvim --headless -c \"lua require('conform').format({ bufnr = 0, timeout_ms = 8000, lsp_format = 'fallback' })\" -c \"write\" -c \"quit\" \"$f\" ;; esac; } >/dev/null 2>&1 || true",
+            "statusMessage": "Formatting Go (nvim conform)"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/tuan/.claude/writing-coach/feedback-hook.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/tuan/work/config/scripts/agent-state.sh working 'Claude Code'"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "hooks": [
@@ -25,5 +52,25 @@
         ]
       }
     ]
-  }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash /home/tuan/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "gopls-lsp@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "caveman@caveman": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
+  },
+  "effortLevel": "medium",
+  "theme": "dark",
+  "agentPushNotifEnabled": true
 }
