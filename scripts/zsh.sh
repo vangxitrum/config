@@ -225,9 +225,7 @@ else
   print_error ".zshrc not found"
 fi
 
-cp ./.profile $HOME
-
-cp ./.zshrc $HOME
+# .zshrc and .profile are symlinked by install.sh (home/.zshrc, home/.profile).
 
 echo ""
 

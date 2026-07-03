@@ -46,9 +46,7 @@ fi
 echo "=================================="
 echo "Configuring Dunst"
 echo "=================================="
-print_status "Copying Dunst configuration..."
-mkdir -p "$HOME/.config/dunst"
-cp -r ./dunst/dunstrc "$HOME/.config/dunst/dunstrc"
+print_status "Dunst config is symlinked by install.sh (config/dunst -> ~/.config/dunst)."
 
 print_status "Copying Dunst notification handler..."
 mkdir -p "$HOME/.config/scripts"

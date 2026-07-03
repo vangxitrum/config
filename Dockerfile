@@ -52,9 +52,9 @@ RUN if getent group $USER_GID > /dev/null; then \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# Prepare workspace
-RUN mkdir -p /home/$USERNAME/setup/config && chown -R $USERNAME:$USERNAME /home/$USERNAME/setup
-WORKDIR /home/$USERNAME/setup/config
+# Prepare workspace (path must match absolute refs in tmux/i3 configs)
+RUN mkdir -p /home/$USERNAME/work/config && chown -R $USERNAME:$USERNAME /home/$USERNAME/work
+WORKDIR /home/$USERNAME/work/config
 
 # ==========================================
 # STAGE 3: Context & Script Setup
@@ -63,7 +63,7 @@ WORKDIR /home/$USERNAME/setup/config
 COPY --chown=$USERNAME:$USERNAME . .
 
 # Ensure all scripts are executable
-RUN chmod +x ./init.sh ./scripts/*.sh
+RUN chmod +x ./init.sh ./install.sh ./scripts/*.sh
 
 # Switch to the custom user for installation steps
 USER $USERNAME
@@ -91,18 +91,11 @@ RUN ./scripts/s3cmd.sh
 RUN ./scripts/fcitx5.sh
 
 # ==========================================
-# STAGE 6: Final Initialization & Entrypoint
+# STAGE 6: Link Configs & Entrypoint
 # ==========================================
-# Run remaining setup from init.sh (Vietnamese input, etc.)
-# Filters out scripts already run as RUN steps for better caching
-RUN <<EOF >> ~/.profile
-
-# Fcitx5
-export GTK_IM_MODULE=fcitx
-export QT_IM_MODULE=fcitx
-export XMODIFIERS=@im=fcitx
-EOF
-
+# Symlink config/ and home/ dotfiles into place.
+# (Fcitx5 env vars live in home/.profile; base image also sets them as ENV.)
+RUN ./install.sh
 
 # Set default command
 CMD ["/bin/zsh", "-i"]

@@ -34,10 +34,7 @@ print_warning() {
 sudo apt-get install -y ruby ruby-dev tmux
 sudo gem install tmuxinator
 
-mkdir -p $HOME/.config/tmux
-mkdir -p $HOME/.config/tmuxinator
-cp -r ./tmux $HOME/.config
-cp -r ./tmuxinator $HOME/.config
+# tmux & tmuxinator configs are symlinked by install.sh.
 
 # Check if tmux is installed
 if ! command -v tmux &>/dev/null; then

@@ -47,6 +47,11 @@ export NVM_DIR="$HOME/.nvm"
 # GVM
 [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
 
+# Fcitx5
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+
 # PATH Setup Note
 # To add a new directory to your PATH, use the following format:
 # export PATH="$HOME/your/bin/path:$PATH"

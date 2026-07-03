@@ -16,5 +16,4 @@ echo ""
 
 sudo apt-get install -y i3 polybar
 
-cp -r ./i3 $HOME/.config
-cp -r ./polybar $HOME/.config
+# i3 & polybar configs are symlinked by install.sh.

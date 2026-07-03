@@ -97,4 +97,12 @@ if [ -n "$tgt" ]; then
 	esac
 fi
 
+# --- terminal window title: clear it when the turn is done -------------------
+# The agent sets its pane title (e.g. "⠐ Claude Code") while working; set-titles
+# mirrors #{pane_title} into the terminal title. On stop, blank the pane title so
+# the terminal/tmux tab isn't left advertising a finished agent.
+if [ -n "$pane" ] && [ "$event" = "stop" ]; then
+	tmux select-pane -t "$pane" -T '' >/dev/null 2>&1 || true
+fi
+
 exit 0

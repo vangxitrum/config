@@ -14,12 +14,7 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo "=================================="
-echo "Copy config Neovim"
-echo "=================================="
-mkdir -p $HOME/.config/nvim
-cp -r ./nvim $HOME/.config
-echo ""
+# Neovim config is symlinked by install.sh (config/nvim -> ~/.config/nvim).
 
 # Function to print colored output
 print_status() {

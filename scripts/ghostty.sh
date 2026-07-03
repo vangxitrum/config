@@ -65,9 +65,7 @@ fi
 echo "=================================="
 echo "Configuring Ghostty"
 echo "=================================="
-print_status "Copying Ghostty configuration..."
-mkdir -p "$HOME/.config/ghostty"
-cp -r ./ghostty/config "$HOME/.config/ghostty/config"
+print_status "Ghostty config is symlinked by install.sh (config/ghostty -> ~/.config/ghostty)."
 
 # Verify installation
 echo ""

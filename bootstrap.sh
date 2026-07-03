@@ -13,9 +13,9 @@ echo "=================================="
 sudo apt-get update
 sudo apt-get install -y git curl
 
-# Define target directory
-TARGET_DIR="$HOME/setup/config"
-mkdir -p "$HOME/setup"
+# Define target directory (must match the absolute paths in tmux/i3/claude configs)
+TARGET_DIR="$HOME/work/config"
+mkdir -p "$HOME/work"
 
 # Clone the repository if it doesn't exist
 if [ ! -d "$TARGET_DIR" ]; then
