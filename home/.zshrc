@@ -58,6 +58,18 @@ export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
 . "/home/tuan/.deno/env"
 
 
+# ssh-agent via keychain: one shared agent per boot. First shell after boot
+# prompts for each key passphrase once; every later shell (and tmux pane) reuses
+# the same agent with no prompt. Push the socket into tmux so all panes agree.
+if command -v keychain >/dev/null 2>&1; then
+  eval "$(keychain --eval --quiet --agents ssh \
+    aioz-ipfs-prod aioz-monitor aioz-storage-prod cdn-demo demo-cicd dvault \
+    github gitlab-stagging-cicd hub internal_gitlab stag stream-prod \
+    tailscail transcribe)"
+  [[ -n $TMUX && -n $SSH_AUTH_SOCK ]] && \
+    tmux set-environment -g SSH_AUTH_SOCK "$SSH_AUTH_SOCK" 2>/dev/null
+fi
+
 # Keep DISPLAY / SSH_AUTH_SOCK fresh inside tmux. A pane whose shell started
 # before the X session (re)attached otherwise keeps a stale/empty DISPLAY, which
 # breaks X tools like xprop and xclip ("unable to open display ''"). Re-sync from
