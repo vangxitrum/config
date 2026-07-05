@@ -90,19 +90,34 @@ fi
 # --- live per-window tab indicator (agent-state.sh) --------------------------
 # stop -> clear the tab; notification -> show the "needs input" icon. Keyed to
 # this pane's window via $TMUX_PANE (same as the jump context above).
+#
+# Exception: Claude Code fires a generic "waiting for your input" notification at
+# turn end (idle prompt), NOT a real permission request. Treat that like stop and
+# clear the tab, so a finished agent doesn't leave a stuck "needs input" badge.
+# A genuine permission prompt ("… needs your permission …") still shows the icon.
 if [ -n "$tgt" ]; then
 	case "$event" in
-		stop)         "$(dirname "$0")/agent-state.sh" idle >/dev/null 2>&1 || true ;;
-		notification) "$(dirname "$0")/agent-state.sh" input "$body" >/dev/null 2>&1 || true ;;
+		stop)
+			"$(dirname "$0")/agent-state.sh" idle >/dev/null 2>&1 || true ;;
+		notification)
+			case "$body" in
+				*[Ww]aiting\ for\ your\ input*|*[Ww]aiting\ for\ input*)
+					"$(dirname "$0")/agent-state.sh" idle >/dev/null 2>&1 || true ;;
+				*)
+					"$(dirname "$0")/agent-state.sh" input "$body" >/dev/null 2>&1 || true ;;
+			esac ;;
 	esac
 fi
 
-# --- terminal window title: clear it when the turn is done -------------------
+# --- terminal window title: reset it when the turn is done -------------------
 # The agent sets its pane title (e.g. "⠐ Claude Code") while working; set-titles
-# mirrors #{pane_title} into the terminal title. On stop, blank the pane title so
-# the terminal/tmux tab isn't left advertising a finished agent.
+# mirrors #{pane_title} into the terminal title. On stop, replace that stale
+# title with the pane's current directory instead of blanking it — blanking also
+# empties #{pane_title} in choose-tree (prefix+w) and pane-border-format, hiding
+# useful info. The dir keeps the terminal title clean AND the picker readable.
 if [ -n "$pane" ] && [ "$event" = "stop" ]; then
-	tmux select-pane -t "$pane" -T '' >/dev/null 2>&1 || true
+	dir=$(tmux display-message -p -t "$pane" '#{b:pane_current_path}' 2>/dev/null)
+	tmux select-pane -t "$pane" -T "${dir:-shell}" >/dev/null 2>&1 || true
 fi
 
 exit 0
