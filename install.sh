@@ -61,5 +61,15 @@ for path in "$HOME_SRC"/.[!.]* "$HOME_SRC"/*; do
   link "$HOME_SRC/$name" "$HOME/$name"
 done
 
+# Per-machine files: create <name>.local from <name>.local.example if missing.
+# The .local copies are gitignored, so each machine keeps its own values.
+while IFS= read -r example; do
+  local_file="${example%.example}"
+  if [ ! -e "$local_file" ]; then
+    cp "$example" "$local_file"
+    warn "created $local_file from template - edit it for this machine"
+  fi
+done < <(find "$CONFIG_SRC" "$HOME_SRC" -name '*.local.example' 2>/dev/null)
+
 echo ""
 ok "Dotfiles linked."

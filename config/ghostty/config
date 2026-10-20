@@ -1,6 +1,7 @@
-font-family = FiraCode Nerd Font
-font-size = 10
-theme = Catppuccin Mocha
-window-decoration = false
-keybind = ctrl+shift+n=unbind
-background-opacity = 0.86
+# Ship ghostty's terminfo to remote hosts over SSH.
+#
+# Without this, ghostty exports TERM=xterm-ghostty and any remote box that
+# lacks that terminfo entry fails with "Error opening terminal: xterm-ghostty".
+#   ssh-terminfo: install the terminfo on the remote on first connect
+#   ssh-env:      fall back to TERM=xterm-256color if the install fails
+shell-integration-features = cursor,no-sudo,title,ssh-env,ssh-terminfo,path

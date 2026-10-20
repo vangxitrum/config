@@ -1,0 +1,11 @@
+# Per-machine overrides (templates are committed as *.local.example)
+*.local
+!*.local.example
+
+# Backups made by install.sh when it replaces a real file
+*.bak.*
+
+# Runtime/generated state inside linked config dirs
+config/tmux/plugins/
+__pycache__/
+*.pyc

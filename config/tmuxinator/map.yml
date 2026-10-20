@@ -1,0 +1,13 @@
+# /home/tuan/.config/tmuxinator/map.yml
+
+name: map
+root: ~/work/map
+
+windows:
+  - editor:
+      layout: main-vertical
+      panes:
+        - nvim .
+  - git:
+      panes:
+        - lazygit

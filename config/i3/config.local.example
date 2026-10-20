@@ -1,0 +1,4 @@
+# Per-machine i3 settings. Copy to config.local and edit; config.local is gitignored.
+# Output names: run `xrandr -q | grep ' connected'`.
+set $monitor_right "HDMI-0"
+set $monitor_left "DP-0"

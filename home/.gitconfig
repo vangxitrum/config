@@ -1,12 +1,17 @@
 [user]
-	email = tuan.quang.tran@aioz.io
-	name = Tuan
+    email = tuan.quang.tran@aioz.io
+	name = tuan.quang.tran
 
-[url "ssh://git@10.0.0.50/"]
-	insteadOf = http://10.0.0.50/
+[url "ssh://git@gitlab.internal/"]
+    insteadOf = https://gitlab.internal/
 
-[url "ssh://git@10.0.0.50/"]
-	insteadOf = https://10.0.0.50/
+[url "ssh://git@gitlab.internal/"]
+    insteadOf = http://gitlab.internal/
 
-[url "git@aiozgithub:tuantq-aioz/"]
-	insteadOf = https://github.com/tuantq-aioz/
+[url "ssh://git@gitlab.internal/"]
+    insteadOf = https://10.0.0.50/
+
+[url "ssh://git@gitlab.internal/"]
+    insteadOf = http://10.0.0.50/
+
+

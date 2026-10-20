@@ -1,0 +1,13 @@
+# /home/tuan/.config/tmuxinator/essay.yml
+
+name: essay
+root: ~/personal/essay-manager
+
+windows:
+  - editor: vim .
+  - git: lazygit
+  - exec:
+      layout: main-vertical
+      panes:
+        - dev: npm run dev
+        - ssh: ssh -i ~/.ssh/drive-prod -R writing:80:localhost:3000 -p 2222 tunnel.zvault.ai

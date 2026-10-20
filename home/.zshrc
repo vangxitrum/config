@@ -29,8 +29,10 @@ source $ZSH/oh-my-zsh.sh
 alias vim='nvim'
 alias tmuxi='tmuxinator'
 alias cc='claude'
+alias oc='opencode --auto'
 alias lzg='lazygit'
-alias genpass="( < /dev/urandom tr -dc 'A-Za-z0-9' | head -c 14; < /dev/urandom tr -dc '!@#$%' | head -c 2 ) | fold -w1 | shuf | tr -d '\n' | xclip -selection clipboard"
+alias lzd='lazydocker'
+alias genpass='( tr -dc "A-Za-z0-9" < /dev/urandom | head -c 14; tr -dc "!@#$%" < /dev/urandom | head -c 2 ) | fold -w1 | shuf | tr -d "\n" | xclip -selection clipboard'
 
 
 # Preferred editor for local and remote sessions
@@ -52,10 +54,7 @@ export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
 
 
 
-[[ -s "/home/tuan/.gvm/scripts/gvm" ]] && source "/home/tuan/.gvm/scripts/gvm"
-[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-. "/home/tuan/.deno/env"
+# gvm + deno env are sourced once via ~/.profile (sourced above) — no repeat here.
 
 
 # ssh-agent via keychain: one shared agent per boot. First shell after boot
@@ -87,4 +86,45 @@ if [[ -n $TMUX ]]; then
 fi
 
 # Added by Antigravity CLI installer
-export PATH="/home/tuan/.local/bin:$PATH"
+export PATH="/home/tuan/.local/bin:$HOME/go/bin:$PATH"
+
+# opencode
+export PATH=/home/tuan/.opencode/bin:$PATH
+
+# dedup history (added by claude)
+setopt HIST_IGNORE_ALL_DUPS HIST_SAVE_NO_DUPS HIST_FIND_NO_DUPS HIST_REDUCE_BLANKS
+
+# pnpm
+export PNPM_HOME="/home/tuan/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME/bin:"*) ;;
+  *) export PATH="$PNPM_HOME/bin:$PATH" ;;
+esac
+# pnpm end
+
+# Config drift check for ~/work/config (see update.sh). Prints one line before
+# the first prompt when this machine has unpushed/uncommitted config edits or
+# is behind origin. Remote refs are refreshed by a background fetch at most
+# every 6h, so startup never waits on the network. Runs from precmd, not
+# inline, so it doesn't trip the p10k instant-prompt console-output warning.
+alias cfgup='~/work/config/update.sh'
+_config_drift_check() {
+  add-zsh-hook -d precmd _config_drift_check
+  local repo=~/work/config stamp=${XDG_CACHE_HOME:-$HOME/.cache}/config-drift-fetch
+  [[ -d $repo/.git ]] || return
+  local -a stale=($stamp(N.mh+6))
+  if [[ ! -e $stamp ]] || (( $#stale )); then
+    : >| $stamp
+    (GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -o BatchMode=yes' \
+      git -C $repo fetch -q &>/dev/null &)
+  fi
+  local -a msg
+  [[ -n $(git -C $repo status --porcelain 2>/dev/null) ]] && msg+=("uncommitted edits")
+  local ahead behind
+  read -r ahead behind < <(git -C $repo rev-list --left-right --count HEAD...@{u} 2>/dev/null)
+  (( ahead > 0 )) && msg+=("$ahead unpushed")
+  (( behind > 0 )) && msg+=("$behind behind origin, run cfgup")
+  (( $#msg )) && print -P "%F{yellow}config:%f ${(j:, :)msg}"
+}
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _config_drift_check

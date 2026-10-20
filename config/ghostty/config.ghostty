@@ -1,0 +1,10 @@
+font-family = FiraCode Nerd Font
+font-size = 10
+theme = Catppuccin Mocha
+window-decoration = false
+keybind = ctrl+shift+n=unbind
+# macOS: Option types special chars (Option+i = dead key, Option+c = ç) by
+# default, so Alt shortcuts (nvim <A-i>, fzf Alt+C, zsh Alt+.) never fire.
+# Make Option send Alt/Meta like Linux. Ignored on Linux.
+macos-option-as-alt = true
+background-opacity = 0.86

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared agent Stop/Notification hook for Claude Code and Gemini CLI.
+# Shared agent Stop/Notification hook for Claude Code, Gemini CLI, and OpenCode.
 #
 # One backend is active at a time (the toggle): tmux | dunst.
 #   tmux  — redraw-proof banner on a 2nd status line (visible over SSH)
@@ -13,7 +13,7 @@
 #
 # Usage: agent-notify.sh <app-label> <event>     event = stop | notification
 # Notification event reads the hook JSON payload (.message) from stdin.
-# Used by claude-notify.sh ("Claude Code") and gemini-notify.sh ("Gemini").
+# Used by the tool-specific shims, including opencode-notify.sh ("OpenCode").
 # Emits nothing on stdout, so callers that must keep stdout clean can rely on it.
 
 set -u

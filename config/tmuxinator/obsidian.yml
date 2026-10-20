@@ -1,0 +1,8 @@
+# /home/tuan/.config/tmuxinator/obsidian.yml
+
+name: obsidian
+root: ~/personal/tuan
+
+windows:
+  - editor: hermes
+  - git: lazygit

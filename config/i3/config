@@ -124,8 +124,9 @@ bindsym $mod+g exec --no-startup-id ~/work/config/scripts/tmux-jump-last-notify.
 
 # Define names for default workspaces for which we configure key bindings later on.
 # We use variables to avoid repeating the names in multiple places.
-set $monitor_right "HDMI-0"
-set $monitor_left "DP-0"
+# Monitor names differ per machine: $monitor_left / $monitor_right are set in
+# config.local (gitignored). install.sh creates it from config.local.example.
+include ~/.config/i3/config.local
 
 
 set $ws1 "1:terminal"
@@ -165,7 +166,8 @@ assign [class="Code"] $ws1
 assign [class="firefox"] $ws2
 assign [class="brave-browser"] $ws2
 assign [class="Brave-browser"] $ws2
-assign [class="Slack"] $ws3
+assign [class="(?i)^slack$"] $ws3
+assign [class="(?i)obsidian"] $ws3
 assign [class="DBeaver"] $ws4
 assign [class="jetbrains-datagrip"] $ws4
 assign [class="Postman"] $ws5
@@ -249,10 +251,16 @@ exec_always nitrogen --restore
 # start polybar
 exec_always ~/.config/scripts/gnome-keyring.sh
 exec_always ~/.config/polybar/launch.sh
-exec_always xrandr --output $monitor_right --right-of $monitor_left
+exec_always xrandr --output $monitor_left --primary --output $monitor_right --right-of $monitor_left
 exec --no-startup-id dunst -print &
 exec --no-startup-id slack &
 
 # hide window title
 for_window [class=".*"] border pixel 0
 
+
+# calendar popup from the polybar clock
+for_window [class="Polycal"] floating enable
+for_window [class="Gsimplecal"] floating enable
+for_window [class="Yad"] floating enable
+for_window [class="Zenity"] floating enable

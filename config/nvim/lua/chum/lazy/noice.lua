@@ -27,5 +27,13 @@ return {
 				lsp_doc_border = true, -- add a border to hover docs and signature help
 			},
 		})
+
+		vim.keymap.set("n", "<C-n>", function()
+			local manager = require("noice.message.manager")
+			local messages = manager.get({ event = "notify" }, { sort = true })
+			if #messages > 0 then
+				manager.remove(messages[#messages])
+			end
+		end, { desc = "Dismiss one notification" })
 	end,
 }

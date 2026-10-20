@@ -11,7 +11,7 @@
 # #{@agent_seg}, which tmux evaluates in each window's own context:
 #
 #   @agent_state : working | input | ''(idle)   (drives the animation daemon)
-#   @agent_app   : "Claude Code" | "Gemini"      (informational)
+#   @agent_app   : "Claude Code" | "Gemini" | "OpenCode" (informational)
 #   @agent_meta  : e.g. "62% $0.42"  (ctx% + cost, pushed by the statusLine cmd)
 #   @agent_seg   : the rendered tab segment #{@agent_seg} shows
 #
@@ -149,10 +149,27 @@ cmd_meta() {
 	fi
 }
 
-# Does the given window still have a live claude/node process in any pane?
-_win_has_agent() {  # $1=win
-	tmux list-panes -t "$1" -F '#{pane_current_command}' 2>/dev/null \
-		| grep -qiE '^(claude|node)$'
+# Is an agent in the given window actually WORKING right now (vs. idle at its
+# prompt)? Claude Code renders a braille spinner (U+2800–28FF, UTF-8 first bytes
+# E2 A0–A3) as the first glyph of its pane title while a turn runs; at the idle
+# prompt the title reverts to "✳ …". This matters because interrupting a turn
+# (Esc) fires no Stop hook and leaves the `claude` process alive — so mere
+# process presence can't tell working from idle, but the title glyph can, which
+# is what stops the spinner animating forever after an interrupt.
+# Non-Claude agents (node/opencode) expose no such title signal, so their
+# presence alone still counts as active (preserves prior behavior).
+_win_agent_active() {  # $1=win
+	tmux list-panes -t "$1" -F '#{pane_current_command} #{pane_title}' 2>/dev/null \
+		| LC_ALL=C awk '
+			{ cmd = $1 }
+			cmd == "node" || cmd == "opencode" { found = 1; exit }
+			cmd == "claude" {
+				t  = substr($0, length(cmd) + 2)   # pane_title, sans "claude "
+				b1 = substr(t, 1, 1); b2 = substr(t, 2, 1)
+				if (b1 == "\342" && b2 >= "\240" && b2 <= "\243") { found = 1; exit }
+			}
+			END { exit(found ? 0 : 1) }
+		'
 }
 
 cmd_daemon() {
@@ -171,10 +188,11 @@ cmd_daemon() {
 		while read -r wid state; do
 			[ "$state" = "working" ] || continue
 
-			if [ "$stale_pass" -eq 1 ] && ! _win_has_agent "$wid"; then
+			if [ "$stale_pass" -eq 1 ] && ! _win_agent_active "$wid"; then
 				local miss; miss=$(_wget "$wid" '@agent_miss'); miss=$(( ${miss:-0} + 1 ))
 				if [ "$miss" -ge "$STALE_STRIKES" ]; then
-					# Agent vanished without a Stop hook — clear this tab.
+					# Agent stopped working without a Stop hook (crashed, or the
+					# turn was interrupted with Esc) — clear this tab.
 					_wunset "$wid" '@agent_state'
 					_wunset "$wid" '@agent_seg'
 					_wunset "$wid" '@agent_meta'

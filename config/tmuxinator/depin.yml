@@ -1,0 +1,21 @@
+# /home/tuan/.config/tmuxinator/depin.yml
+
+name: depin
+root: ~/work/depin-workspace/depin
+
+windows:
+  - editor:
+      layout: titled
+      panes:
+        - nvim .
+  - agent:
+      layout: main-vertical
+      panes:
+        - lazygit
+        - claude
+  - sdk:
+      root: ~/work/depin-workspace/go-sdk
+      layout: main-vertical
+      panes:
+        - lazygit
+        - claude

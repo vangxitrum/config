@@ -96,4 +96,8 @@ vim.opt.updatetime = 50
 
 vim.opt.colorcolumn = "80"
 
-vim.g.python3_host_prog = "/home/tuan/anaconda3/bin/python"
+-- anaconda only exists on some machines; fall back to the python3 on PATH
+local conda_python = vim.fn.expand("~/anaconda3/bin/python")
+if vim.fn.executable(conda_python) == 1 then
+	vim.g.python3_host_prog = conda_python
+end

@@ -38,6 +38,9 @@ local others = {
 	},
 	{
 		"numToStr/Comment.nvim",
+		config = function()
+			require("Comment").setup()
+		end,
 	},
 	{
 		"christoomey/vim-tmux-navigator",

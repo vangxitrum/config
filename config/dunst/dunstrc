@@ -7,6 +7,7 @@
     height = 300
     origin = top-center
     offset = 0x30
+    gap_size = 8
     # Progress bar
     progress_bar = true
     progress_bar_height = 10
@@ -34,7 +35,7 @@
     icon_path = /usr/share/icons/Papirus/16x16/status/:/usr/share/icons/Papirus/16x16/devices/:/usr/share/icons/Papirus/16x16/apps/
     # History
     sticky_history = yes
-    history_length = 20
+    history_length = 100
     # Misc
     dmenu = dmenu -p dunst:
     browser = firefox-esr
@@ -63,3 +64,18 @@
     foreground = "#f38ba8"
     frame_color = "#f38ba8"
     timeout = 0
+
+# Slack: never expire, hide the message body, and collapse every Slack
+# notification into a single stacked one (set_stack_tag) so only one is ever
+# on screen. Rules apply in file order, so this must stay below urgency_*.
+[slack]
+    appname = "Slack"
+    format = "<b>@%s</b> sent you a message"
+    timeout = 0
+    set_stack_tag = "slack"
+
+[slack-lowercase]
+    appname = "slack"
+    format = "<b>@%s</b> sent you a message"
+    timeout = 0
+    set_stack_tag = "slack"
