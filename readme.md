@@ -40,6 +40,19 @@ For a completely automated setup on a fresh Ubuntu installation:
 curl -sSL https://raw.githubusercontent.com/vangxitrum/config/main/bootstrap.sh | bash
 ```
 
+### Headless Machine (Server / VPS)
+
+Skip the desktop-only parts (i3, Ghostty, Dunst, fonts, Fcitx5, flameshot, xclip):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/vangxitrum/config/main/bootstrap.sh | bash -s -- --headless
+# or, from a clone:
+./init.sh --headless
+```
+
+Desktop configs are still linked by `install.sh`; they are inert without a display.
+Desktop notifications (Dunst, the tmux notification jump) do not work headless.
+
 ### Local Machine (Manual)
 
 To install components manually on your existing system:
@@ -90,6 +103,10 @@ Anything that differs between machines lives in a gitignored `*.local` file,
 created by `install.sh` from the committed `*.local.example` template:
 
 - `config/i3/config.local` — monitor names (`$monitor_left`, `$monitor_right`)
+
+tmuxinator layouts are per-machine too: `config/tmuxinator/*` is gitignored, so a
+new layout stays on the machine that created it. The shared layouts already
+tracked keep syncing; add a new shared one with `git add -f`.
 
 ### Docker (Containerized Environment)
 

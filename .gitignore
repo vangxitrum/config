@@ -9,3 +9,7 @@
 config/tmux/plugins/
 __pycache__/
 *.pyc
+
+# tmuxinator layouts are per-machine: new ones stay local. The shared layouts
+# already tracked are unaffected; add a new shared one with `git add -f`.
+config/tmuxinator/*

@@ -2,6 +2,7 @@
 
 # This script is a "one-liner" bootstrap for a fresh Ubuntu installation.
 # It installs basic dependencies, clones the repository, and runs the initialization.
+# Arguments are passed to init.sh, e.g. `bash -s -- --headless` for a server.
 
 set -e
 
@@ -29,7 +30,7 @@ fi
 # Run the initialization
 cd "$TARGET_DIR"
 chmod +x ./init.sh ./scripts/*.sh
-./init.sh
+./init.sh "$@"
 
 echo ""
 echo "=================================="
