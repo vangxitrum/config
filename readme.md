@@ -27,6 +27,9 @@ A modular and automated configuration setup for Linux (optimized for Ubuntu/Debi
     - Any tool can opt in by adding `-c "tmux-target:$(tmux display -p '#{window_id}')"` to its `notify-send` call.
     - Claude Code hooks (`claude-notify.sh`) are pre-wired with persistent notifications and pane tracking.
 - **s3cmd**: Command-line tool for managing Amazon S3 and other cloud storage.
+- **Git tools**: GitHub CLI (`gh`, official apt repo) and `lazygit`.
+- **CLI tools**: `btop`, `keychain` (shared ssh-agent per boot), `lazydocker`.
+- **Coding agents**: Claude Code, Codex, opencode, Hermes Agent (official installers; sign in once after install).
 - **Fonts**: Automated Nerd Font installation (FiraCode).
 - **Ghostty**: Terminal emulator setup and configuration.
 

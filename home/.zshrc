@@ -32,7 +32,7 @@ alias cc='claude'
 alias oc='opencode --auto'
 alias lzg='lazygit'
 alias lzd='lazydocker'
-alias genpass='( tr -dc "A-Za-z0-9" < /dev/urandom | head -c 14; tr -dc "!@#$%" < /dev/urandom | head -c 2 ) | fold -w1 | shuf | tr -d "\n" | xclip -selection clipboard'
+alias genpass='( tr -dc "A-Za-z0-9" < /dev/urandom | head -c 14; tr -dc "!@#$%" < /dev/urandom | head -c 2 ) | fold -w1 | shuf | tr -d "\n" | ~/work/config/scripts/clip.sh'
 
 
 # Preferred editor for local and remote sessions

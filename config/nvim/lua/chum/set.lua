@@ -29,6 +29,33 @@ vim.opt.showmode = false
 --  See `:help 'clipboard'`
 vim.opt.clipboard = "unnamedplus"
 
+-- Yanks must reach the clipboard of the machine I am typing on, also over SSH.
+-- Inside tmux, scripts/clip.sh sends them through tmux as OSC 52 (and to this
+-- host's X clipboard), and paste reads X when there is one, else tmux's buffer.
+-- Outside tmux over SSH, use the built-in OSC 52 provider; paste comes from the
+-- unnamed register because many terminals refuse OSC 52 reads.
+if vim.env.TMUX then
+  local clip = { vim.fn.expand("~/work/config/scripts/clip.sh") }
+  vim.g.clipboard = {
+    name = "tmux-osc52",
+    copy = { ["+"] = clip, ["*"] = clip },
+    paste = {
+      ["+"] = { "sh", "-c", "xclip -o -selection clipboard 2>/dev/null || tmux save-buffer -" },
+      ["*"] = { "sh", "-c", "xclip -o -selection clipboard 2>/dev/null || tmux save-buffer -" },
+    },
+  }
+elseif vim.env.SSH_TTY then
+  local osc52 = require("vim.ui.clipboard.osc52")
+  local function paste()
+    return { vim.fn.split(vim.fn.getreg(""), "\n"), vim.fn.getregtype("") }
+  end
+  vim.g.clipboard = {
+    name = "osc52",
+    copy = { ["+"] = osc52.copy("+"), ["*"] = osc52.copy("*") },
+    paste = { ["+"] = paste, ["*"] = paste },
+  }
+end
+
 -- Enable break indent
 vim.opt.breakindent = true
 

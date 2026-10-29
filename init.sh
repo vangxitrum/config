@@ -64,6 +64,9 @@ chmod +x ./install.sh ./scripts/*.sh
 ./scripts/tmux.sh
 ./scripts/nvim.sh
 ./scripts/s3cmd.sh
+./scripts/git.sh
+./scripts/tools.sh
+./scripts/agents.sh
 
 if ! $HEADLESS; then
   ./scripts/i3.sh

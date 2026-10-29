@@ -88,6 +88,9 @@ RUN ./scripts/ghostty.sh
 RUN ./scripts/font.sh
 RUN ./scripts/dunst.sh
 RUN ./scripts/s3cmd.sh
+RUN ./scripts/git.sh
+RUN ./scripts/tools.sh
+RUN ./scripts/agents.sh
 RUN ./scripts/fcitx5.sh
 
 # ==========================================
