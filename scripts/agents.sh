@@ -31,7 +31,14 @@ print_error() {
 # (symlinked, repo-tracked) shell rc files alone.
 export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
 
-if command -v claude &>/dev/null; then
+# Usage: agents.sh [claude|codex|opencode|hermes ...]  (default: all four).
+# Dockerfile.coding installs each in its own build stage.
+ONLY=("$@")
+want() { [ "${#ONLY[@]}" -eq 0 ] || [[ " ${ONLY[*]} " == *" $1 "* ]]; }
+
+if ! want claude; then
+    :
+elif command -v claude &>/dev/null; then
     print_status "claude already installed: $(claude --version)"
 else
     print_status "Installing Claude Code..."
@@ -39,7 +46,9 @@ else
     print_success "Claude Code installed successfully!"
 fi
 
-if command -v codex &>/dev/null; then
+if ! want codex; then
+    :
+elif command -v codex &>/dev/null; then
     print_status "codex already installed: $(codex --version)"
 else
     print_status "Installing Codex..."
@@ -47,7 +56,9 @@ else
     print_success "Codex installed successfully!"
 fi
 
-if command -v opencode &>/dev/null; then
+if ! want opencode; then
+    :
+elif command -v opencode &>/dev/null; then
     print_status "opencode already installed: $(opencode --version)"
 else
     print_status "Installing opencode..."
@@ -55,7 +66,9 @@ else
     print_success "opencode installed successfully!"
 fi
 
-if command -v hermes &>/dev/null; then
+if ! want hermes; then
+    :
+elif command -v hermes &>/dev/null; then
     print_status "hermes already installed"
 else
     print_status "Installing Hermes Agent..."

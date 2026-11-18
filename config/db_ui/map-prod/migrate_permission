@@ -1,0 +1,46 @@
+-- Remove elevated administrative privileges
+ALTER ROLE migrate
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    NOREPLICATION
+    NOBYPASSRLS;
+
+-- Remove dangerous direct role memberships
+REVOKE pg_execute_server_program FROM migrate;
+REVOKE pg_read_server_files FROM migrate;
+REVOKE pg_write_server_files FROM migrate;
+
+-- Database access
+GRANT CONNECT ON DATABASE weather TO migrate;
+
+-- Allow creating database objects in public
+GRANT USAGE, CREATE ON SCHEMA public TO migrate;
+GRANT USAGE, CREATE ON SCHEMA tiger TO migrate;
+GRANT USAGE, CREATE ON SCHEMA topology TO migrate;
+
+-- Restore normal privileges on existing tables
+GRANT ALL PRIVILEGES
+ON ALL TABLES IN SCHEMA public
+TO migrate;
+
+GRANT ALL PRIVILEGES
+ON ALL TABLES IN SCHEMA tiger
+TO migrate;
+
+GRANT ALL PRIVILEGES
+ON ALL TABLES IN SCHEMA topology
+TO migrate;
+
+-- Sequence privileges for migrations
+GRANT ALL PRIVILEGES
+ON ALL SEQUENCES IN SCHEMA public
+TO migrate;
+
+GRANT ALL PRIVILEGES
+ON ALL SEQUENCES IN SCHEMA tiger
+TO migrate;
+
+GRANT ALL PRIVILEGES
+ON ALL SEQUENCES IN SCHEMA topology
+TO migrate;

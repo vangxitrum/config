@@ -63,17 +63,14 @@ EOF
 # Configure Unikey (Vietnamese)
 mkdir -p "$HOME/.config/fcitx5/conf"
 cat >"$HOME/.config/fcitx5/conf/unikey.conf" <<EOF
-[Editor]
-# Default Input Method State
-DefaultState=Vietnamese
-# Telex
-Telex=True
-# VNI
-VNI=False
-# STelex
-STelex=False
-# STelex2
-STelex2=False
+# Typing style: Telex (others: VNI, STelex, ...)
+InputMethod=Telex
+OutputCharset=Unicode
+SpellCheck=True
+# Restore English words typed while Vietnamese is on (e.g. "text")
+AutoNonVnRestore=True
+ModernStyle=False
+FreeMarking=True
 EOF
 
 # Ensure fcitx5 starts with the correct input methods

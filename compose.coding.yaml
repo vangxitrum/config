@@ -1,0 +1,47 @@
+services:
+  coding:
+    image: config-coding:latest
+    stdin_open: true
+    tty: true
+    # Same name as scripts/pg-docker.sh: host services and published DB ports.
+    # Needs the rootless setup from scripts/docker.sh (host-gateway -> 10.0.2.2).
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    # Notifications go to the host's dunst via scripts/agent-notify-bridge.sh.
+    environment:
+      AGENT_NOTIFY_SPOOL: /run/agent-notify
+      # sshd (scripts/coding-sshd.sh): keys from your ~/.ssh/authorized_keys,
+      # no passwords; ufw lets only these addresses reach it. CODING_SSHD=0
+      # skips it.
+      CODING_SSH_ALLOW: ${CODING_SSH_ALLOW:-10.0.0.40}
+      CODING_SSHD: ${CODING_SSHD:-1}
+    # ufw needs NET_ADMIN (only inside the container's own network namespace).
+    cap_add:
+      - NET_ADMIN
+    # Published with `up`, or `run --service-ports`. Client IPs reach ufw only
+    # with rootless Docker's slirp4netns port driver (scripts/docker.sh).
+    ports:
+      - ${CODING_SSH_PUBLISH:-2222}:2222
+    volumes:
+      - type: bind
+        source: ${CODING_WORKSPACE:-.}
+        target: /workspace
+      - zsh:/home/coder/.config/zsh
+      - ${CODING_CLAUDE_STATE:-claude}:/home/coder/.claude
+      - codex:/home/coder/.local/state/codex
+      - type: bind
+        source: ${CODING_SSH_DIR:-${HOME}/.ssh}
+        target: /home/coder/.ssh
+        read_only: true
+        bind:
+          create_host_path: false
+      - sshd-keys:/etc/ssh/host_keys
+      - type: bind
+        source: ${XDG_RUNTIME_DIR:-/run/user/1000}/agent-notify
+        target: /run/agent-notify
+
+volumes:
+  zsh:
+  sshd-keys:
+  claude:
+  codex:

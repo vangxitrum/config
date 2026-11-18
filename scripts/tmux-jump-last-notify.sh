@@ -58,7 +58,7 @@ else
 		session=$(tmux list-windows -a -F '#{window_id} #{session_name}' \
 			| awk -v t="$target" '$1==t {print $2; exit}')
 		[ -z "$session" ] && fail "Could not resolve session for $target."
-		ghostty -e bash -lc "tmux attach -t '$session' \\; select-window -t '$target'" \
+		kitty bash -lc "tmux attach -t '$session' \\; select-window -t '$target'" \
 			>/dev/null 2>&1 &
 	fi
 fi

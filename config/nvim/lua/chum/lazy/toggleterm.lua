@@ -17,6 +17,9 @@ return {
 			direction = "float",
 			close_on_exit = true,
 			shell = vim.o.shell,
+			-- Keep TMUX set here: tmuxinator and other tmux-aware tools need it to
+			-- switch-client instead of nesting an attach. Claude Code's OSC 52 issue
+			-- in nvim terminals is handled by the claude() wrapper in ~/.zshrc.
 			float_opts = {
 				border = "curved",
 				winblend = 0,

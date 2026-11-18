@@ -1,0 +1,114 @@
+-- Remove administrative privileges
+ALTER ROLE app
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    NOREPLICATION
+    NOBYPASSRLS;
+
+-- Remove dangerous direct memberships
+REVOKE pg_execute_server_program FROM app;
+REVOKE pg_read_server_files FROM app;
+REVOKE pg_write_server_files FROM app;
+
+-- Allow database connection
+GRANT CONNECT ON DATABASE weather TO app;
+
+-- Allow schema access, but not object creation
+GRANT USAGE ON SCHEMA public TO app;
+GRANT USAGE ON SCHEMA tiger TO app;
+GRANT USAGE ON SCHEMA topology TO app;
+
+
+-- Remove any direct CREATE privilege
+REVOKE CREATE ON SCHEMA public FROM app;
+REVOKE CREATE ON SCHEMA tiger FROM app;
+REVOKE CREATE ON SCHEMA topology FROM app;
+
+-- Remove unnecessary table privileges
+REVOKE ALL PRIVILEGES
+ON ALL TABLES IN SCHEMA public
+FROM app;
+
+REVOKE ALL PRIVILEGES
+ON ALL TABLES IN SCHEMA tiger
+FROM app;
+
+REVOKE ALL PRIVILEGES
+ON ALL TABLES IN SCHEMA topology
+FROM app;
+
+-- Grant only CRUD
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA public
+TO app;
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA tiger
+TO app;
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA topology
+TO app;
+
+-- Remove existing sequence privileges
+REVOKE ALL PRIVILEGES
+ON ALL SEQUENCES IN SCHEMA public
+FROM app;
+
+REVOKE ALL PRIVILEGES
+ON ALL SEQUENCES IN SCHEMA tiger
+FROM app;
+
+REVOKE ALL PRIVILEGES
+ON ALL SEQUENCES IN SCHEMA topology
+FROM app;
+
+-- Allow use of sequences for auto-generated IDs
+GRANT USAGE, SELECT
+ON ALL SEQUENCES IN SCHEMA public
+TO app;
+
+GRANT USAGE, SELECT
+ON ALL SEQUENCES IN SCHEMA tiger
+TO app;
+
+GRANT USAGE, SELECT
+ON ALL SEQUENCES IN SCHEMA topology
+TO app;
+
+
+
+-- Future permission
+-- Future tables created by migrate
+ALTER DEFAULT PRIVILEGES FOR ROLE migrate
+IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLES TO app;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE migrate
+IN SCHEMA tiger
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLES TO app;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE migrate
+IN SCHEMA topology
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLES TO app;
+
+-- Future sequences created by migrate
+ALTER DEFAULT PRIVILEGES FOR ROLE migrate
+IN SCHEMA public
+GRANT USAGE, SELECT
+ON SEQUENCES TO app;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE migrate
+IN SCHEMA tiger
+GRANT USAGE, SELECT
+ON SEQUENCES TO app;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE migrate
+IN SCHEMA topology
+GRANT USAGE, SELECT
+ON SEQUENCES TO app;
+

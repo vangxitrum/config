@@ -13,7 +13,7 @@ set $mod Mod4
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
-font pango:FiraCode 8
+font pango:FiraCode Nerd Font 8
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
@@ -36,6 +36,8 @@ bindsym $mod+ctrl+l exec --no-startup-id ~/work/config/scripts/lock.sh
 exec --no-startup-id nm-applet
 exec --no-startup-id nitrogen --restore
 exec --no-startup-id picom -b
+# Show notifications from the coding container (compose.coding.yaml) on dunst.
+exec --no-startup-id ~/work/config/scripts/agent-notify-bridge.sh
 
 # Use pactl to adjust volume in PulseAudio.
 set $refresh_i3status killall -SIGUSR1 i3status
@@ -48,13 +50,16 @@ bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOU
 floating_modifier $mod
 
 # start a terminal
-bindsym $mod+Return exec ghostty
+bindsym $mod+Return exec kitty
 
 # kill focused window
 bindsym $mod+q kill
 
 # start dmenu (a program launcher)
 bindsym $mod+d exec --no-startup-id dmenu_run
+
+# open (or focus) vim-dadbod-ui on workspace 4:db
+bindsym $mod+Shift+d exec --no-startup-id ~/work/config/scripts/dbui.sh
 # A more modern dmenu replacement is rofi:
 # bindcode $mod+40 exec "rofi -modi drun,run -show drun"
 # There also is i3-dmenu-desktop which only displays applications shipping a
@@ -124,11 +129,6 @@ bindsym $mod+g exec --no-startup-id ~/work/config/scripts/tmux-jump-last-notify.
 
 # Define names for default workspaces for which we configure key bindings later on.
 # We use variables to avoid repeating the names in multiple places.
-# Monitor names differ per machine: $monitor_left / $monitor_right are set in
-# config.local (gitignored). install.sh creates it from config.local.example.
-include ~/.config/i3/config.local
-
-
 set $ws1 "1:terminal"
 set $ws2 "2:browser"
 set $ws3 "3:slack"
@@ -139,6 +139,13 @@ set $ws7 "7:nodes"
 set $ws8 "8:others"
 set $ws9 "9"
 set $ws10 "10"
+
+# Monitor names differ per machine: $monitor_left / $monitor_right are set in
+# config.local (gitignored; install.sh creates it from config.local.example),
+# which then includes monitors.conf (screen order, workspace -> monitor).
+# i3 does not let this file use variables defined in an included file, so
+# everything that needs the monitor names lives in monitors.conf.
+include ~/.config/i3/config.local
 
 # switch to workspace
 bindsym $mod+1 workspace number $ws1
@@ -152,16 +159,8 @@ bindsym $mod+8 workspace number $ws8
 bindsym $mod+9 workspace number $ws9
 bindsym $mod+0 workspace number $ws10
 
-#assign workspace to monitor
-workspace $ws1 output $monitor_left
-workspace $ws2 output $monitor_right
-workspace $ws3 output $monitor_left
-workspace $ws4 output $monitor_right
-workspace $ws5 output $monitor_right
-workspace $ws7 output $monitor_right
-
 # open app for workspace
-assign [class="ghostty"] $ws1
+assign [class="^kitty$"] $ws1
 assign [class="Code"] $ws1
 assign [class="firefox"] $ws2
 assign [class="brave-browser"] $ws2
@@ -170,6 +169,8 @@ assign [class="(?i)^slack$"] $ws3
 assign [class="(?i)obsidian"] $ws3
 assign [class="DBeaver"] $ws4
 assign [class="jetbrains-datagrip"] $ws4
+# vim-dadbod-ui window from scripts/dbui.sh (own class, so not the kitty rule)
+assign [class="^com\.chum\.dbui$"] $ws4
 assign [class="Postman"] $ws5
 assign [class="Nautilus"] $ws6
 assign [class="aioz_worker_node"] $ws7
@@ -240,8 +241,8 @@ client.background       #ffffff
 exec "setxkbmap -layout us,vi"
 exec "setxkbmap -option 'grp:alt_shift_toggle'"
 
-# set keyboard layout
- exec --no-startup-id fcitx5 -d
+# input method (fcitx5, Ctrl+Shift switches English / Vietnamese)
+exec --no-startup-id fcitx5 -d
 
 
 
@@ -249,11 +250,10 @@ exec "setxkbmap -option 'grp:alt_shift_toggle'"
 exec_always nitrogen --restore
 
 # start polybar
-exec_always ~/.config/scripts/gnome-keyring.sh
 exec_always ~/.config/polybar/launch.sh
-exec_always xrandr --output $monitor_left --primary --output $monitor_right --right-of $monitor_left
 exec --no-startup-id dunst -print &
 exec --no-startup-id slack &
+exec --no-startup-id ~/work/config/scripts/dbui.sh --background
 
 # hide window title
 for_window [class=".*"] border pixel 0

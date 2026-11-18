@@ -2,7 +2,9 @@
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = " "
-vim.g.maplocalleader = " "
+-- Localleader must differ from leader: which-key treats every <localleader>
+-- key as buffer-local, so " " here leaks all leader keys into buffer-only help.
+vim.g.maplocalleader = "\\"
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true

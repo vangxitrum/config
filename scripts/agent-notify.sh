@@ -2,7 +2,7 @@
 # Shared agent Stop/Notification hook for Claude Code, Gemini CLI, and OpenCode.
 #
 # One backend is active at a time (the toggle): tmux | dunst.
-#   tmux  — redraw-proof banner on a 2nd status line (visible over SSH)
+#   tmux  — redraw-proof banner replacing status-right (visible over SSH)
 #   dunst — persistent desktop notify-send carrying a tmux jump target
 # Mode resolves from $AGENT_NOTIFY_MODE > $XDG_CONFIG_HOME/agent-notify/mode >
 # 'tmux' (default). Flip it with agent-notify-mode.sh.
@@ -67,7 +67,11 @@ if [ "$mode" = "tmux" ]; then
 	# Build the banner content. The status line is a tmux FORMAT, so literal '#'
 	# must be doubled; the #[...] style sequences are intentional.
 	bloc=""; [ -n "$loc" ] && bloc=" [$loc]"
-	sbody=${body//#/##}
+	# Keep it on one status row: flatten newlines and cap the body length
+	# (truncated here, not in the format, so #[...] styles are never split).
+	sbody=${body//$'\n'/ }
+	[ "${#sbody}" -gt 80 ] && sbody="${sbody:0:79}…"
+	sbody=${sbody//#/##}
 	sbloc=${bloc//#/##}
 	an_tmux_banner "#[$style] $title$sbloc #[default] $sbody" "$ms"
 elif [ "$mode" = "dunst" ]; then

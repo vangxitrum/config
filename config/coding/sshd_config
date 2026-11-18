@@ -1,0 +1,28 @@
+# sshd for the coding container (installed as /etc/ssh/sshd_config.d/coding.conf
+# by Dockerfile.coding, started by scripts/coding-sshd.sh).
+#
+# Keys only, from your host ~/.ssh/authorized_keys (compose.coding.yaml mounts
+# your ~/.ssh at /home/coder/.ssh), read by sshd through AuthorizedKeysCommand
+# so edits apply on the next login.
+#
+# Login is root only: the container runs as root, which under rootless Docker
+# is your host user (Dockerfile.coding, final stage); root's home is
+# /home/coder. `ssh -p 2222 root@<host>`.
+
+Port 2222
+HostKey /etc/ssh/host_keys/ssh_host_ed25519_key
+
+PermitRootLogin prohibit-password
+AllowUsers root
+AuthenticationMethods publickey
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+
+AuthorizedKeysFile none
+AuthorizedKeysCommand /usr/bin/cat /home/coder/.ssh/authorized_keys
+AuthorizedKeysCommandUser root
+
+X11Forwarding no
+PermitUserEnvironment no

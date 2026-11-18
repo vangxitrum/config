@@ -38,7 +38,7 @@
     history_length = 100
     # Misc
     dmenu = dmenu -p dunst:
-    browser = firefox-esr
+    browser = /usr/bin/firefox
     always_run_script = true
     script = ~/.config/scripts/dunst_handler.sh
     title = Dunst

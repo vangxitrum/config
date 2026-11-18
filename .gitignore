@@ -13,3 +13,7 @@ __pycache__/
 # tmuxinator layouts are per-machine: new ones stay local. The shared layouts
 # already tracked are unaffected; add a new shared one with `git add -f`.
 config/tmuxinator/*
+
+# dadbod-ui: saved queries are shared, but connections added with `A` store
+# plain URLs (passwords included). Connections come from ~/.pg_service.conf.
+config/db_ui/connections.json

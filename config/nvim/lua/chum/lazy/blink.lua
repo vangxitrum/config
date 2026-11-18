@@ -4,17 +4,6 @@ return {
 		"saghen/blink.cmp",
 		dependencies = {
 			"rafamadriz/friendly-snippets",
-			"huijiro/blink-cmp-supermaven",
-			{
-				"supermaven-inc/supermaven-nvim",
-				opts = {
-					keymaps = {
-						accept_suggestion = "<C-t>",
-						clear_suggestion = "<C-]>",
-						accept_word = "<C-Right>",
-					},
-				},
-			},
 		},
 		-- event = "InsertEnter",
 		version = "*",
@@ -32,21 +21,22 @@ return {
 					nerd_font_variant = "normal",
 				},
 				sources = {
-					-- per_filetype = {
-					--     codecompanion = { "codecompanion" },
-					-- },
-					default = { "supermaven", "lsp", "path", "snippets", "lazydev", "buffer" },
+					per_filetype = {
+						-- Tables/columns from the connected DB (see lazy/dadbod.lua).
+						sql = { "dadbod", "snippets", "buffer" },
+						mysql = { "dadbod", "snippets", "buffer" },
+						plsql = { "dadbod", "snippets", "buffer" },
+					},
+					default = { "lsp", "path", "snippets", "lazydev", "buffer" },
 					providers = {
-						supermaven = {
-							name = "Supermaven",
-							module = "blink-cmp-supermaven",
-							score_offset = 100,
-							async = true,
-						},
 						lazydev = {
 							name = "LazyDev",
 							module = "lazydev.integrations.blink",
 							score_offset = 100,
+						},
+						dadbod = {
+							name = "Dadbod",
+							module = "vim_dadbod_completion.blink",
 						},
 						-- laravel = {
 						--     name = "laravel",

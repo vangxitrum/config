@@ -26,6 +26,11 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+DOCKER_PACKAGES=(docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin)
+if [[ "${1:-}" == "--cli-only" ]]; then
+    DOCKER_PACKAGES=(docker-ce-cli docker-buildx-plugin docker-compose-plugin)
+fi
+
 # Check if docker is already installed
 if command -v docker &>/dev/null; then
     print_status "Docker already installed, skipping installation..."
@@ -55,9 +60,57 @@ else
         sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
     sudo apt-get update
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    sudo apt-get install -y "${DOCKER_PACKAGES[@]}"
 
     print_success "Docker installed successfully!"
+fi
+
+if [[ "${1:-}" == "--cli-only" ]]; then
+    exit 0
+fi
+
+# Rootless Docker (no sudo): no docker group to join. Keep client IPs on
+# published ports, let containers reach the
+# host's 127.0.0.1 and make `host-gateway` (host.docker.internal in
+# compose.coding.yaml and scripts/pg-docker.sh) point there. By default
+# host-gateway is the bridge gateway inside rootlesskit's network namespace,
+# where neither published ports nor host SSH tunnels are reachable;
+# 10.0.2.2 is slirp4netns' address for the host's loopback.
+if [[ "$(docker context show 2>/dev/null)" == "rootless" ]]; then
+    echo "=================================="
+    echo "Configuring rootless Docker networking"
+    echo "=================================="
+    dropin="$HOME/.config/systemd/user/docker.service.d/host-loopback.conf"
+    daemon_json="$HOME/.config/docker/daemon.json"
+    changed=false
+
+    # slirp4netns port driver: published ports see the real client IP (the
+    # builtin driver makes every client 172.17.0.1), which the coding
+    # container's ufw needs to allow only one address. A bit slower.
+    want_dropin=$'[Service]\nEnvironment=DOCKERD_ROOTLESS_ROOTLESSKIT_DISABLE_HOST_LOOPBACK=false\nEnvironment=DOCKERD_ROOTLESS_ROOTLESSKIT_PORT_DRIVER=slirp4netns\n'
+    if [[ "$(cat "$dropin" 2>/dev/null)"$'\n' != "$want_dropin" ]]; then
+        mkdir -p "$(dirname "$dropin")"
+        printf '%s' "$want_dropin" >"$dropin"
+        changed=true
+    fi
+
+    if ! grep -q '"host-gateway-ips"' "$daemon_json" 2>/dev/null; then
+        if [[ -s "$daemon_json" ]]; then
+            print_error "$daemon_json exists; add \"host-gateway-ips\": [\"10.0.2.2\"] to it by hand."
+        else
+            mkdir -p "$(dirname "$daemon_json")"
+            printf '{\n  "host-gateway-ips": ["10.0.2.2"]\n}\n' >"$daemon_json"
+            changed=true
+        fi
+    fi
+
+    if $changed; then
+        print_status "Restarting rootless dockerd (running containers restart only if they have a restart policy)..."
+        systemctl --user daemon-reload
+        systemctl --user restart docker
+    fi
+    print_success "host.docker.internal -> host loopback (10.0.2.2) for rootless Docker."
+    exit 0
 fi
 
 # Add user to docker group

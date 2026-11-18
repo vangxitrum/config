@@ -1,0 +1,8 @@
+select date_trunc('day', tx.created_at)::date as day,
+       count(*) as tx_count,
+       sum(tx.amount) / 1e18 as total_amount,
+       sum(tx.amount) filter (where tx.status = 1) / 1e18 as success_amount
+from tx_outs tx
+where tx.created_at >= '2026-11-01'
+group by 1
+order by 1 desc;

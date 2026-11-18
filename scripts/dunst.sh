@@ -1,56 +1,32 @@
 #!/bin/bash
+# Configure Dunst as this user's notification daemon, without sudo.
+# The binaries come from scripts/i3.sh (~/.local/lib/i3-desktop).
+set -euo pipefail
 
-set -e # Exit on error
-
-echo "=================================="
-echo "Dunst Installation"
-echo "=================================="
-echo ""
-
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-# Function to print colored output
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Install Dunst
-print_status "Installing Dunst and libnotify..."
-sudo apt-get update
-sudo apt-get install -y dunst libnotify-bin
-
-# Disable default Ubuntu notification daemon
-print_status "Disabling default Ubuntu notification daemon..."
-# Remove notify-osd if it exists, as it often conflicts with dunst
-sudo apt-get purge -y notify-osd notification-daemon || true
-
-# If there are any other services providing notifications, we should handle them
-# Some systems have a generic service file that points to the default daemon
-if [ -f /usr/share/dbus-1/services/org.freedesktop.Notifications.service ]; then
-    sudo mv /usr/share/dbus-1/services/org.freedesktop.Notifications.service /usr/share/dbus-1/services/org.freedesktop.Notifications.service.bak || true
+if (( EUID == 0 )); then
+  echo "Run this as the user who will run i3." >&2
+  exit 1
 fi
 
-# Configuration
-echo "=================================="
-echo "Configuring Dunst"
-echo "=================================="
-print_status "Dunst config is symlinked by install.sh (config/dunst -> ~/.config/dunst)."
+dunst="$HOME/.local/bin/dunst"
+if [[ ! -x "$dunst" ]]; then
+  echo "Dunst is not installed; run ./scripts/i3.sh first." >&2
+  exit 1
+fi
 
-print_status "Copying Dunst notification handler..."
+# The session bus reads ~/.local/share/dbus-1/services before the system
+# directories, so this entry wins over notify-osd or GNOME's daemon when
+# something asks for notifications before i3 has started Dunst.
+services="${XDG_DATA_HOME:-$HOME/.local/share}/dbus-1/services"
+mkdir -p "$services"
+cat > "$services/org.freedesktop.Notifications.service" <<EOF
+[D-BUS Service]
+Name=org.freedesktop.Notifications
+Exec=$dunst
+EOF
+echo "Registered Dunst for org.freedesktop.Notifications in $services."
+
+# The Dunst config is linked by install.sh (config/dunst -> ~/.config/dunst).
 mkdir -p "$HOME/.config/scripts"
-cp ./scripts/dunst_handler.sh "$HOME/.config/scripts/dunst_handler.sh"
-chmod +x "$HOME/.config/scripts/dunst_handler.sh"
-
-print_success "Dunst installation and configuration complete!"
+install -m 755 ./scripts/dunst_handler.sh "$HOME/.config/scripts/dunst_handler.sh"
+echo "Dunst is configured."

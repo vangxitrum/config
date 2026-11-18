@@ -13,6 +13,7 @@ return {
 			{ "<leader>l", group = "Lint" },
 			{ "<leader>v", group = "View" },
 			{ "<leader>f", group = "File" },
+			{ "<leader>s", group = "SQL" },
 		},
 	},
 }

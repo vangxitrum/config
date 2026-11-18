@@ -1,0 +1,183 @@
+# syntax=docker/dockerfile:1
+#
+# Coding image, built in stages so a change only rebuilds what depends on it:
+#
+#   base ─┬─ system (apt: docker CLI, psql, btop/age, tmuxinator, sshd/ufw)
+#         ├─ zsh, node, python, gotools, nvim          (in parallel)
+#         └─ agent-claude, agent-codex, agent-opencode,
+#            agent-hermes (from node)                  (in parallel)
+#   final = system + every stage's home merged in (COPY --link), then the
+#           repo's config/home/scripts, cheapest-to-redo last.
+#
+# Each stage copies only the script it runs, so editing e.g.
+# scripts/agent-notify-lib.sh rebuilds just the last layer, and editing
+# scripts/agents.sh reinstalls the agents but not Miniconda or the apt tools.
+
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# ── base: system packages every stage needs, and the coder user ───────────────
+FROM ubuntu:24.04 AS base
+ARG DEBIAN_FRONTEND=noninteractive
+ARG USER_UID
+ARG USER_GID
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bsdmainutils build-essential ca-certificates curl gh git gnupg golang-go \
+    locales luarocks openssh-client python3 python3-venv ripgrep s3cmd sudo \
+    tmux unzip wget zsh \
+    && locale-gen en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN if id ubuntu >/dev/null 2>&1; then userdel -r ubuntu; fi \
+    && (getent group "$USER_GID" >/dev/null || groupadd --gid "$USER_GID" coder) \
+    && useradd --create-home --uid "$USER_UID" --gid "$USER_GID" --shell /bin/zsh coder \
+    && install -d -o coder -g "$USER_GID" /workspace /home/coder/work/config \
+    && printf 'coder ALL=(root) NOPASSWD:ALL\n' > /etc/sudoers.d/coder \
+    && chmod 0440 /etc/sudoers.d/coder
+
+ENV HOME=/home/coder SHELL=/bin/zsh EDITOR=nvim LANG=en_US.UTF-8
+ENV PATH="/home/coder/.local/bin:/home/coder/go/bin:/home/coder/.opencode/bin:/home/coder/miniconda3/condabin:${PATH}"
+USER coder
+WORKDIR /home/coder
+
+# ── home-directory tools: independent stages, built in parallel ───────────────
+# Each ends by dropping caches; its whole $HOME is merged into the final image.
+FROM base AS zsh
+COPY --chown=coder scripts/zsh.sh /tmp/build/
+RUN bash /tmp/build/zsh.sh && rm -rf ~/.cache
+
+FROM base AS node
+COPY --chown=coder scripts/node.sh /tmp/build/
+RUN bash /tmp/build/node.sh && rm -rf ~/.cache ~/.npm
+
+FROM base AS python
+COPY --chown=coder scripts/python.sh /tmp/build/
+RUN bash /tmp/build/python.sh && rm -rf ~/.cache ~/Miniconda3-*.sh
+
+# lazygit (go install); gh itself comes from base's apt.
+FROM base AS gotools
+COPY --chown=coder scripts/git.sh /tmp/build/
+RUN bash /tmp/build/git.sh && go clean -cache -modcache && rm -rf ~/.cache
+
+FROM base AS nvim
+# Match the host installer version.
+ARG NVIM_VERSION=v0.12.2
+ARG TARGETARCH
+RUN case "$TARGETARCH" in amd64) arch=x86_64 ;; arm64) arch=arm64 ;; *) exit 1 ;; esac \
+    && mkdir -p /tmp/nvim \
+    && curl -fsSL --retry 3 \
+        "https://github.com/neovim/neovim/releases/download/$NVIM_VERSION/nvim-linux-$arch.tar.gz" \
+    | tar -xz -C /tmp/nvim --strip-components=1
+
+# One stage per agent: they download in parallel and cache separately.
+FROM base AS agent-claude
+COPY --chown=coder scripts/agents.sh /tmp/build/
+RUN bash /tmp/build/agents.sh claude && rm -rf ~/.cache
+
+FROM base AS agent-codex
+COPY --chown=coder scripts/agents.sh /tmp/build/
+RUN bash /tmp/build/agents.sh codex && rm -rf ~/.cache
+
+FROM base AS agent-opencode
+COPY --chown=coder scripts/agents.sh /tmp/build/
+RUN bash /tmp/build/agents.sh opencode && rm -rf ~/.cache
+
+# Hermes installs with Node on PATH (as before); ~/.nvm is dropped afterwards
+# so its copy doesn't shadow the node stage's.
+FROM node AS agent-hermes
+COPY --chown=coder scripts/agents.sh /tmp/build/
+RUN bash -c 'source "$HOME/.nvm/nvm.sh" && nvm use default && bash /tmp/build/agents.sh hermes' \
+    && rm -rf ~/.nvm ~/.cache ~/.npm
+
+# ── system: apt-level tools, most stable first ────────────────────────────────
+FROM base AS system
+
+# SSH server behind ufw (config/coding/sshd_config, scripts/coding-sshd.sh).
+# pam_loginuid can't write in a container; ufw can't load modules or sysctls.
+RUN sudo apt-get update \
+    && sudo apt-get install -y --no-install-recommends openssh-server ufw iptables \
+    && sudo rm -rf /var/lib/apt/lists/* /etc/ssh/ssh_host_* \
+    && sudo sed -i 's/^session\s\+required\s\+pam_loginuid.so/session optional pam_loginuid.so/' /etc/pam.d/sshd \
+    && sudo sed -i -e 's/^IPT_SYSCTL=.*/IPT_SYSCTL=\/dev\/null/' -e 's/^IPT_MODULES=.*/IPT_MODULES=""/' /etc/default/ufw \
+    && sudo install -d -m 0700 /etc/ssh/host_keys
+
+# tmuxinator (same packages as scripts/tmux.sh, which needs the configs and
+# so can't run before them).
+RUN sudo apt-get update \
+    && sudo apt-get install -y --no-install-recommends ruby ruby-dev \
+    && sudo gem install tmuxinator \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+COPY --chown=coder scripts/docker.sh /tmp/build/
+RUN bash /tmp/build/docker.sh --cli-only && sudo rm -rf /var/lib/apt/lists/*
+
+COPY --chown=coder scripts/postgres-client.sh /tmp/build/
+RUN bash /tmp/build/postgres-client.sh --native && sudo rm -rf /var/lib/apt/lists/*
+
+COPY --chown=coder scripts/tools.sh /tmp/build/
+RUN bash /tmp/build/tools.sh && sudo rm -rf /var/lib/apt/lists/* ~/.cache
+
+# ── final ─────────────────────────────────────────────────────────────────────
+# Runs as container root: under rootless Docker that is your host user, so
+# files written to bind mounts (workspace, ~/.claude) stay yours, while
+# `coder` would be a foreign subuid that can't write them. Root's home is
+# /home/coder (root-owned, so zsh's compaudit is happy).
+FROM system AS final
+ARG USER_UID
+ARG USER_GID
+USER root
+RUN chown -R 0:0 /home/coder /workspace \
+    && sed -i 's#^root:\([^:]*\):0:0:\([^:]*\):[^:]*:[^:]*$#root:\1:0:0:\2:/home/coder:/bin/zsh#' /etc/passwd \
+    && getent passwd root | grep -q ':/home/coder:/bin/zsh$' \
+    && git config --system safe.directory '*'
+
+COPY --link --from=nvim /tmp/nvim/ /usr/local/
+COPY --link --chown=0:0 --from=zsh /home/coder/ /home/coder/
+COPY --link --chown=0:0 --from=node /home/coder/ /home/coder/
+COPY --link --chown=0:0 --from=python /home/coder/ /home/coder/
+COPY --link --chown=0:0 --from=gotools /home/coder/ /home/coder/
+COPY --link --chown=0:0 --from=agent-claude /home/coder/ /home/coder/
+COPY --link --chown=0:0 --from=agent-codex /home/coder/ /home/coder/
+COPY --link --chown=0:0 --from=agent-opencode /home/coder/ /home/coder/
+COPY --link --chown=0:0 --from=agent-hermes /home/coder/ /home/coder/
+
+# Make Node available to tools launched directly, including Neovim's package manager.
+RUN bash -ec 'source "$HOME/.nvm/nvm.sh"; nvm use default; version_bin="$(dirname "$(command -v node)")"; ln -sf "$version_bin/node" "$version_bin/npm" "$version_bin/npx" "$HOME/.local/bin/"'
+
+# sshd config and entrypoint: only these files, so other script edits skip it.
+COPY config/coding/sshd_config scripts/coding-sshd.sh scripts/coding-entrypoint.sh /tmp/sshd/
+RUN sudo install -m 0644 /tmp/sshd/sshd_config /etc/ssh/sshd_config.d/coding.conf \
+    && sudo install -m 0755 /tmp/sshd/coding-sshd.sh /usr/local/sbin/coding-sshd \
+    && sudo install -m 0755 /tmp/sshd/coding-entrypoint.sh /usr/local/bin/coding-entrypoint \
+    && sudo rm -rf /tmp/sshd \
+    && sudo ln -sfn /home/coder/.ssh /root/.ssh
+
+# Dotfiles: install.sh links config/ and home/ into place; tmux plugins via TPM.
+WORKDIR /home/coder/work/config
+COPY config/ config/
+COPY home/ home/
+COPY install.sh ./
+RUN bash install.sh \
+    && git clone --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.config/tmux/plugins/tpm" \
+    && tmux start-server \; set-option -s exit-empty off \
+    && "$HOME/.config/tmux/plugins/tpm/bin/install_plugins" \
+    && tmux kill-server
+
+ENV ZDOTDIR=/home/coder/.config/zsh \
+    CLAUDE_CONFIG_DIR=/home/coder/.claude \
+    CODEX_HOME=/home/coder/.local/state/codex \
+    XDG_RUNTIME_DIR=/dev/shm/config-coding-$USER_UID \
+    IS_SANDBOX=1
+RUN install -d -m 0700 "$ZDOTDIR" "$CLAUDE_CONFIG_DIR" "$CODEX_HOME" \
+    && install -m 0600 home/.zshrc "$ZDOTDIR/.zshrc" \
+    && ln -sfn "$ZDOTDIR/.zshrc" "$HOME/.zshrc" \
+    && printf '%s\n' 'HISTFILE="$ZDOTDIR/.zsh_history"' 'HISTSIZE=50000' 'SAVEHIST=50000' 'setopt INC_APPEND_HISTORY' > "$ZDOTDIR/.zshenv"
+
+# Scripts last: they change most often (hooks, helpers) and nothing above
+# needs the full set.
+COPY scripts/ scripts/
+
+EXPOSE 2222
+WORKDIR /workspace
+ENTRYPOINT ["/usr/local/bin/coding-entrypoint"]
+CMD ["tmux", "new-session", "-A", "-s", "coding"]

@@ -3,6 +3,10 @@ font-size = 10
 theme = Catppuccin Mocha
 window-decoration = false
 keybind = ctrl+shift+n=unbind
+# Ctrl+Enter goes to the app (nvim dadbod-ui: run query), not Ghostty's
+# default fullscreen toggle. Fullscreen moves to F11 (i3 $mod+f also works).
+keybind = ctrl+enter=unbind
+keybind = f11=toggle_fullscreen
 # macOS: Option types special chars (Option+i = dead key, Option+c = ç) by
 # default, so Alt shortcuts (nvim <A-i>, fzf Alt+C, zsh Alt+.) never fire.
 # Make Option send Alt/Meta like Linux. Ignored on Linux.

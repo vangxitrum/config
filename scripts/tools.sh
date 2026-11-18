@@ -3,7 +3,7 @@
 set -e # Exit on error
 
 echo "=================================="
-echo "CLI Tools (btop, keychain, lazydocker)"
+echo "CLI Tools (btop, age, lazydocker)"
 echo "=================================="
 echo ""
 
@@ -29,10 +29,11 @@ print_error() {
 # Older installs put lazydocker in ~/go/bin; this shell has not sourced ~/.profile.
 export PATH="$HOME/.local/bin:$PATH:$HOME/go/bin"
 
-# btop: resource monitor. keychain: one shared ssh-agent per boot (see home/.zshrc).
-print_status "Installing btop and keychain..."
+# btop: resource monitor. (ssh-agent: scripts/sshkey.sh, on demand.)
+# age: file encryption for ~/.pgpass.age (see scripts/pgpass.sh).
+print_status "Installing btop and age..."
 sudo apt-get update
-sudo apt-get install -y btop keychain
+sudo apt-get install -y btop age
 
 # lazydocker from the upstream release binary: `go install` does not use the
 # repo's vendored deps and fails to compile against current docker modules.

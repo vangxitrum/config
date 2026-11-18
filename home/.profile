@@ -93,10 +93,4 @@ conda() {
 # GVM
 [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
 
-export GTK_IM_MODULE=fcitx
-export QT_IM_MODULE=fcitx
-export XMODIFIERS=@im=fcitx
-. "/home/tuan/.deno/env"
-
-# Added by Antigravity CLI installer
-export PATH="/home/tuan/.local/bin:$PATH"
+[ ! -r "$HOME/.deno/env" ] || . "$HOME/.deno/env"

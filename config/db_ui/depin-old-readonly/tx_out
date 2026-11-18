@@ -1,0 +1,19 @@
+select tx.id,
+       tx."from",
+       tx."to",
+       tx.amount /1e18 as amount,
+       case tx.status
+         when 0 then 'pending'
+         when 1 then 'success'
+         when 2 then 'refunded'
+         when 3 then 'failed'
+         when 4 then 'blacklisted'
+         when 5 then 'pending_retry'
+         when 6 then 'in_mempool'
+         else 'unknown'
+       end as status
+from tx_outs tx
+order by tx.created_at desc
+limit 200;
+
+

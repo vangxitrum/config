@@ -1,9 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(/home/tuan/.claude/writing-coach/wlog:*)"
-    ]
-  },
   "model": "opus[1m]",
   "hooks": {
     "PostToolUse": [
@@ -23,11 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/tuan/.claude/writing-coach/feedback-hook.sh"
-          },
-          {
-            "type": "command",
-            "command": "/home/tuan/work/config/scripts/agent-state.sh working 'Claude Code'"
+            "command": "$HOME/work/config/scripts/agent-state.sh working 'Claude Code'"
           }
         ]
       }
@@ -37,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/tuan/work/config/scripts/claude-notify.sh notification"
+            "command": "$HOME/work/config/scripts/claude-notify.sh notification"
           }
         ]
       }
@@ -47,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/tuan/work/config/scripts/claude-notify.sh stop"
+            "command": "$HOME/work/config/scripts/claude-notify.sh stop"
           }
         ]
       }
@@ -55,7 +46,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash /home/tuan/.claude/statusline-command.sh"
+    "command": "bash \"$HOME/work/config/.claude/statusline-command.sh\""
   },
   "enabledPlugins": {
     "gopls-lsp@claude-plugins-official": true,

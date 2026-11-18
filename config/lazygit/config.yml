@@ -1,0 +1,52 @@
+customCommands:
+  - key: <c-a>
+    context: files
+    description: "Generate commit message with Claude"
+    output: terminal
+    # disableAllHooks: session hooks (caveman, superpowers, writing coach)
+    # otherwise inject style rules and the model leaks meta-commentary
+    # ("Wait, the caveman rule says...") into the commit message.
+    command: >
+      git diff --cached --stat --patch |
+      claude -p --model haiku --settings '{"disableAllHooks":true}' "Generate a git commit message for the staged changes shown below.
+      Follow the writing-commit-messages skill for format and content.
+      Output only the raw commit message text - no code fences, no commentary."
+      > /tmp/lazygit-ai-commit-msg.txt &&
+      GIT_EDITOR="${EDITOR:-nvim}" git commit --edit --file /tmp/lazygit-ai-commit-msg.txt
+
+os:
+  # Open files in Neovim, not via xdg-open (which routed html/json/xml to a
+  # browser through mimeapps.list). editPreset drives the `edit` action.
+  editPreset: 'nvim'
+
+keybinding:
+  universal:
+    # <c-o> opens the file in nvim inside the terminal (was xdg-open -> browser).
+    edit: '<c-o>'
+    # Disable the GUI "open with default app" action that launched the browser.
+    openFile: '<disabled>'
+    # Must be moved off its <c-o> default, otherwise it wins the conflict and
+    # `edit` above never fires.
+    copyToClipboard: '<c-g>'
+
+gui:
+  theme:
+    activeBorderColor:
+      - "#89b4fa"
+      - bold
+    inactiveBorderColor:
+      - "#a6adc8"
+    optionsTextColor:
+      - "#89b4fa"
+    selectedLineBgColor:
+      - "#313244"
+    cherryPickedCommitBgColor:
+      - "#45475a"
+    cherryPickedCommitFgColor:
+      - "#89b4fa"
+    unstagedChangesColor:
+      - "#f38ba8"
+    defaultFgColor:
+      - "#cdd6f4"
+    searchingActiveBorderColor:
+      - "#f9e2af"

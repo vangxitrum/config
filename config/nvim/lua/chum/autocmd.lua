@@ -117,6 +117,23 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
+-- Terminal apps (e.g. Claude Code) copy via OSC 52, which nvim's terminal swallows.
+-- Forward the payload to the + register so it reaches the system clipboard.
+vim.api.nvim_create_autocmd("TermRequest", {
+	group = vim.api.nvim_create_augroup("terminal_osc52_copy", { clear = true }),
+	desc = "Copy OSC 52 clipboard writes from terminal jobs to the system clipboard",
+	callback = function(args)
+		local b64 = args.data.sequence:match("^\027%]52;[^;]*;(.*)$")
+		if not b64 or b64 == "" or b64 == "?" then
+			return
+		end
+		local ok, text = pcall(vim.base64.decode, b64)
+		if ok then
+			vim.fn.setreg("+", text)
+		end
+	end,
+})
+
 -- Refresh statusline git branch after returning from lazygit (external or toggleterm)
 vim.api.nvim_create_autocmd({ "FocusGained", "TermClose" }, {
 	group = vim.api.nvim_create_augroup("statusline_git_refresh", { clear = true }),

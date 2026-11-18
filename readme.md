@@ -26,12 +26,26 @@ A modular and automated configuration setup for Linux (optimized for Ubuntu/Debi
     - `C-s b` (tmux): Jump back to the previous pane.
     - Any tool can opt in by adding `-c "tmux-target:$(tmux display -p '#{window_id}')"` to its `notify-send` call.
     - Claude Code hooks (`claude-notify.sh`) are pre-wired with persistent notifications and pane tracking.
+    - From the coding container: agents write notifications to `$XDG_RUNTIME_DIR/agent-notify` (mounted at `/run/agent-notify`) and `scripts/agent-notify-bridge.sh`, started by i3, shows them on the host's dunst. Inside the container the default mode is dunst (`C-s N` toggles tmux banners); `C-s g` jumps within the container's tmux, while `Super+G` on the host cannot.
 - **s3cmd**: Command-line tool for managing Amazon S3 and other cloud storage.
 - **Git tools**: GitHub CLI (`gh`, official apt repo) and `lazygit`.
-- **CLI tools**: `btop`, `keychain` (shared ssh-agent per boot), `lazydocker`.
+    - Lazygit config (`config/lazygit/config.yml`): Catppuccin theme, `C-o` opens files in Neovim, `C-a` in the files panel drafts a commit message with Claude (headless, hooks disabled so session style rules don't leak into the message).
+- **CLI tools**: `btop`, `lazydocker`.
+- **SSH keys on demand** (`sshkey`, `scripts/sshkey.sh`): no agent runs at login and none is exposed to GUI apps. `sshkey` starts one on `$XDG_RUNTIME_DIR/ssh-agent.sock` (shared by every terminal) and lets you pick keys with fzf (or `ALL`); `sshkey all`, `sshkey github hub`, `sshkey -t 4h …` (expire), `sshkey ls`, `sshkey rm`, `sshkey stop`. Passphrases are asked in the terminal.
+    - `sshkey setup` (one time, no sudo): masks the session's automatic agents (GNOME Keyring's `gcr-ssh-agent`, gpg-agent's ssh socket, systemd `ssh-agent`). The keyring's password store for Slack/browsers is untouched.
+- **psql 17 in Docker** (no sudo): `scripts/postgres-client.sh` links `psql`, `pg_dump`, `pg_restore` and `pg_dumpall` in `~/.local/bin` to `scripts/pg-docker.sh`, which runs them from `postgres:17-alpine` (bump `PG_VERSION` in both scripts to match your newest server). `$HOME`, `/tmp` and `$XDG_RUNTIME_DIR` are mounted at the same paths, so dadbod, `~/.pg_service.conf` and `$PGPASSFILE` work unchanged. `--native` installs from the PGDG apt repo instead (used by the Docker images).
+    - Local DBs: publish the DB container's port and use `host=host.docker.internal` in `~/.pg_service.conf`; the same entry works from the coding container. Under rootless Docker this needs `scripts/docker.sh`, which points `host-gateway` at the host's loopback (`10.0.2.2`) and so also reaches SSH tunnels on your `localhost`.
+- **Postgres passwords** (`pgpass`, `scripts/pgpass.sh`): stored in `~/.pgpass.age`, encrypted with `age` to the SSH keys listed in `~/.pgpass.recipients`. Hosts and users stay in `~/.pg_service.conf`.
+    - `pgpass init`: one time, create the `~/.ssh/pgpass` key if missing, encrypt an existing plain `~/.pgpass` and delete it.
+    - `pgpass add`: prompt for a new connection, write the service entry and the encrypted password, then test it.
+    - `pgpass unlock` (inside tmux): decrypt with the SSH key to RAM (`$PGPASSFILE` on tmpfs) until the tmux server exits. Several tmux servers can unlock (the main one and the dbui one); the copy is deleted when the last of them exits.
+    - `pgpass edit` / `pgpass lock` / `pgpass status`.
+    - Another machine: append its SSH public key to `~/.pgpass.recipients`, run `pgpass edit` (re-encrypts to every key), copy `~/.pgpass.age` and `~/.pg_service.conf` over, and set `PGPASS_IDENTITY` there if its key is not `~/.ssh/pgpass`.
+- **vim-dadbod-ui** (Neovim): `<leader>su` toggles the DB tree, `Ctrl+Enter` runs the query (normal/insert) or selection (visual). `<leader>?` (or `?` in the tree) shows a which-key popup with only that DB buffer's keys. Connections are read from `~/.pg_service.conf`; tables and columns autocomplete in SQL buffers.
+    - Own window: `$mod+Shift+d` (or `dbui` in a shell) opens it in a separate kitty window on i3 workspace `4:db`, inside its own tmux server (`tmux -L dbui`, separate from your main tmux; unlocks passwords first). Pressing it again focuses the open window. Over SSH, `dbui` opens the same session in your terminal (detach with prefix `d`; it keeps running). It starts in the saved-queries folder, `config/db_ui/` in this repo (synced with git; `connections.json` there is ignored). i3 also starts it on login (in the background, so you stay on workspace 1).
 - **Coding agents**: Claude Code, Codex, opencode, Hermes Agent (official installers; sign in once after install).
 - **Fonts**: Automated Nerd Font installation (FiraCode).
-- **Ghostty**: Terminal emulator setup and configuration.
+- **kitty**: Terminal emulator (`$mod+Enter`), config in `config/kitty/kitty.conf`. `scripts/kitty.sh` installs it under `~/.local/kitty.app` when it is missing.
 
 ## 🛠 Installation
 
@@ -45,7 +59,7 @@ curl -sSL https://raw.githubusercontent.com/vangxitrum/config/main/bootstrap.sh 
 
 ### Headless Machine (Server / VPS)
 
-Skip the desktop-only parts (i3, Ghostty, Dunst, fonts, Fcitx5, flameshot, xclip):
+Skip the desktop-only parts (i3, kitty, Dunst, fonts, Fcitx5, flameshot, xclip):
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/vangxitrum/config/main/bootstrap.sh | bash -s -- --headless
@@ -69,6 +83,36 @@ chmod +x ./init.sh ./install.sh ./scripts/*.sh
 
 > The repo is expected at `~/work/config` — tmux, i3, and Claude Code hooks
 > reference scripts there by absolute path.
+
+### User-local i3
+
+`./scripts/i3.sh` downloads i3 and the tools its config starts (i3status,
+i3lock, dmenu, dex, xss-lock, Polybar, Dunst, picom, Flameshot, and Nitrogen
+on Ubuntu releases that package it, Fcitx5 with Unikey, and PyICU for the
+lunar dates in the Polybar calendar) from the configured Ubuntu package
+repositories into `~/.local/lib/i3-desktop` and links the commands into
+`~/.local/bin`. Only libraries missing from the system are bundled. Run it as
+your regular user; it needs no sudo. Run it again to update. `./init.sh` uses
+the same installer and still installs other system prerequisites through APT.
+
+Fcitx5 answers as IBus, so GTK, Qt, Electron and kitty apps reach it through the
+IBus modules Ubuntu already ships; `start-i3` sets `GTK_IM_MODULE=ibus`,
+`QT_IM_MODULE=ibus`, `GLFW_IM_MODULE=ibus` and `XMODIFIERS=@im=fcitx` for the
+session. `./scripts/fcitx5.sh` writes its settings (Telex, `Ctrl+Shift` toggle).
+
+Firefox allows one running copy per profile. If Firefox is still open in a
+GNOME session, launching it from i3 opens the window over in GNOME instead, so
+close it there (or log out of GNOME) before `start-i3`.
+
+`./scripts/dunst.sh` registers Dunst as your session's notification daemon
+(`~/.local/share/dbus-1/services`). Other notification daemons stay installed but unused.
+
+Run `./install.sh` to link the desktop configs. To start i3, switch to a text
+console (`Ctrl+Alt+F3`), log in, and run `start-i3`. It starts the system Xorg
+(`xserver-xorg-core`, the only system package needed) without root, using the
+bundled xinit and keyboard/mouse driver. The Xorg log is
+`~/.local/state/Xorg.<n>.log`. Exiting i3 returns to the console. The display
+manager's session menu is left untouched, so i3 is not listed there.
 
 ### Linking Only (configs already installed)
 
@@ -105,11 +149,109 @@ at most every 6h).
 Anything that differs between machines lives in a gitignored `*.local` file,
 created by `install.sh` from the committed `*.local.example` template:
 
-- `config/i3/config.local` — monitor names (`$monitor_left`, `$monitor_right`)
+- `config/i3/config.local` — monitor names (`$monitor_left`, `$monitor_right`).
+  It must end with `include ~/.config/i3/monitors.conf` (the template does), which
+  sets the screen order and puts workspaces on their monitors. A `config.local`
+  made before this change needs that line added.
 
 tmuxinator layouts are per-machine too: `config/tmuxinator/*` is gitignored, so a
 new layout stays on the machine that created it. The shared layouts already
 tracked keep syncing; add a new shared one with `git add -f`.
+
+### Install only the tmux config
+
+Run this from the checkout as your regular user:
+
+```bash
+./install-tmux.sh
+```
+
+The script installs `~/.tmux.conf` and its helper scripts, and backs up an
+existing `~/.tmux.conf` when it changes. It uses TPM if it is already installed
+at `~/.config/tmux/plugins/tpm`. Run the installer again after updating the
+checkout. Reload a running server with `tmux source-file ~/.tmux.conf`.
+
+### Headless coding image
+
+The coding image starts tmux and Zsh as a non-root user with the repo's
+terminal dotfiles, including the full tmux, Neovim, and Lazygit configs. It
+includes NVM, Miniconda, Go, LuaRocks, PostgreSQL client, coding agents, and
+the Docker CLI. Docker commands need access to a Docker daemon. Desktop
+components such as i3, Polybar, kitty, Dunst, and Fcitx5 are excluded.
+
+The Dockerfile is multi-stage: Zsh, Node, Miniconda, Go tools, Neovim and
+each coding agent build in parallel stages that copy only the script they run,
+and the repo's dotfiles and scripts are copied last. Editing a helper script
+rebuilds in seconds; editing `scripts/agents.sh` reinstalls only the agents.
+
+```bash
+docker build -f Dockerfile.coding \
+  --build-arg USER_UID="$(id -u)" --build-arg USER_GID="$(id -g)" \
+  -t config-coding .
+```
+
+From the config checkout, start a session with persistent state. Set
+`CODING_WORKSPACE` to the absolute path of the project to mount at `/workspace`.
+
+```bash
+CODING_WORKSPACE=/absolute/path/to/project docker compose -f compose.coding.yaml run --rm coding
+```
+
+#### SSH into the container
+
+The container runs an SSH server on port 2222 that accepts only the keys in
+your host `~/.ssh/authorized_keys` (no passwords). The container runs as
+root, which under rootless Docker *is* your host user: files it writes to the
+workspace or `~/.claude` stay owned by you (the `coder` user would be a foreign
+subuid that can't write bind mounts). Log in as `root`; its home is `/home/coder`. ufw inside the
+container drops every other address: only `CODING_SSH_ALLOW` (default
+`10.0.0.40`; space/comma separated, CIDRs work) may connect. Ports are
+published by `up` (or `run --service-ports`):
+
+```bash
+CODING_WORKSPACE=/absolute/path/to/project docker compose -f compose.coding.yaml up -d
+ssh -p 2222 root@<this machine>       # from 10.0.0.40, then: tmux attach -t coding
+docker compose -f compose.coding.yaml exec coding tmux attach -t coding   # locally
+```
+
+- Rootless Docker needs `scripts/docker.sh` once: its `slirp4netns` port driver passes the real client IP to the container (with the default driver every client looks like `172.17.0.1`, and ufw lets nobody in).
+- `authorized_keys` is read through `AuthorizedKeysCommand`; edits apply on the next login.
+- The host key lives in the `sshd-keys` volume, so rebuilds don't trigger known_hosts warnings. Logs: `/var/log/coding-sshd.log`. `CODING_SSHD=0` turns it off.
+
+Compose creates four named volumes (`sshd-keys` holds the SSH host key). The Zsh volume starts with the repo’s
+`~/.zshrc` and saves subsequent edits and shell history. The Claude Code and
+Codex volumes keep their local settings, sessions, memory, and file-based
+login state. Sign in inside the container on first use with `claude auth login`.
+If prompted again, run `claude auth status` in a fresh container started with the
+same Compose project name. Claude stores its login and onboarding state under
+`CLAUDE_CONFIG_DIR`. [Claude Code dev container docs](https://code.claude.com/docs/en/devcontainer#persist-authentication-and-settings-across-rebuilds)
+
+Set `CODING_CLAUDE_STATE="$HOME/.claude"` when launching Compose to use your
+host Claude directory instead. That mount shares credentials and allows Claude
+to write to the host directory. Claude may prompt for first-time setup in the
+container because a standard host install keeps `.claude.json` outside that
+directory. Claude history is indexed by project path, so history recorded under
+a host path may not appear under `/workspace`.
+
+With rootless Docker, add `--user 0:0` before `coding` in the Compose run
+command. Rootless Docker maps that container UID to your host user, which gives
+the terminal access to owner-only files in the bind mounts. This runs the
+terminal as root within the container's user namespace.
+
+Compose mounts `~/.ssh` read-only. Set `CODING_SSH_DIR` to an absolute path to
+use a different SSH directory. Use `ssh-agent zsh` in a tmux pane when you want
+to cache a decrypted key, then run `ssh-add ~/.ssh/<key>` in the new shell.
+The agent serves that shell and its child processes. Run `exit` to stop it.
+If SSH needs to record a new host key, use `ssh -o
+UserKnownHostsFile="$HOME/.config/zsh/known_hosts" …` to save it in the
+persistent Zsh volume.
+
+To use a specific host Zsh config, add the following option before `coding`
+in the Compose command. The file must be readable by the container user.
+
+```bash
+-v /absolute/path/to/.zshrc:/home/coder/.config/zsh/.zshrc:ro
+```
 
 ### Docker (Containerized Environment)
 
@@ -139,12 +281,13 @@ docker run -it my-config
 │   ├── polybar/    #   status bar
 │   ├── tmux/       #   tmux (pane jump bindings, visual pane styling)
 │   ├── tmuxinator/ #   tmuxinator project layouts
-│   ├── ghostty/    #   Ghostty terminal
+│   ├── kitty/      #   kitty terminal
+│   ├── ghostty/    #   Ghostty terminal (no longer installed by init.sh)
 │   ├── dunst/      #   notification daemon
 │   └── fcitx5/     #   input method (generated by scripts/fcitx5.sh, not linked)
 ├── home/           # mirrors ~ — symlinked by install.sh
 │   ├── .zshrc      #   Zsh + Oh My Zsh
-│   ├── .profile    #   shared env (PATH, NVM, GVM, Fcitx5)
+│   ├── .profile    #   shared env (PATH, NVM, GVM)
 │   └── .gitconfig
 ├── scripts/        # tool installers + runtime helpers
 │                   #   (claude-notify.sh, tmux-jump-*.sh, dunst-close-one.sh, ...)

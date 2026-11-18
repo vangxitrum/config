@@ -1,17 +1,26 @@
 #!/usr/bin/env bash
 # Shared notification primitives for agent-notify.sh and agent-notify-mode.sh.
 # Sourced, not executed. Two backends:
-#   tmux  — a redraw-proof banner on a dedicated 2nd status line. (A plain
-#           display-message toast is wiped by the next status redraw, which in a
-#           busy session is near-instant; a status-line value survives redraws.)
+#   tmux  — a redraw-proof banner that temporarily replaces status-right (same
+#           row, so panes never shift). Works over SSH / inside the container.
+#           (A plain display-message toast is wiped by the next status redraw;
+#           a status-line value survives redraws.)
 #   dunst — notify-send -t 0 (never auto-expire) with -r to replace in place.
 
-# Resolve the active mode -> prints 'tmux' or 'dunst' (default tmux).
+# Resolve the active mode -> prints 'tmux' or 'dunst' (default tmux, also in
+# the coding container: over SSH nothing reads the dunst bridge spool).
 an_mode() {
 	local m="${AGENT_NOTIFY_MODE:-}"
 	local f="${XDG_CONFIG_HOME:-$HOME/.config}/agent-notify/mode"
 	[ -z "$m" ] && [ -r "$f" ] && m=$(tr -d '[:space:]' < "$f" 2>/dev/null || true)
 	case "$m" in tmux|dunst) printf '%s' "$m" ;; *) printf 'tmux' ;; esac
+}
+
+# True when notifications should go through the host bridge
+# (compose.coding.yaml sets AGENT_NOTIFY_SPOOL to a mount of the host's
+# $XDG_RUNTIME_DIR/agent-notify, read by agent-notify-bridge.sh).
+an_spool_ok() {
+	[ -n "${AGENT_NOTIFY_SPOOL:-}" ] && [ -d "$AGENT_NOTIFY_SPOOL" ] && [ -w "$AGENT_NOTIFY_SPOOL" ]
 }
 
 an_set_mode() {  # $1 = tmux|dunst
@@ -20,11 +29,13 @@ an_set_mode() {  # $1 = tmux|dunst
 	printf '%s\n' "$1" > "$f"
 }
 
-# Show a banner on a dedicated 2nd tmux status line; auto-clears after $2 ms.
+# Show a banner in place of status-right; auto-clears after $2 ms.
 #   $1 = fully styled content (may contain #[...] sequences)
 #   $2 = milliseconds to hold (default 8000)
-# A newer banner replaces the current one (and resets the timer) via a token,
-# so the clear job never removes a banner that has since been replaced.
+# Reuses the existing status row (no 2nd line), so panes never shift. The
+# banner is a status-line value, so it survives redraws (a display-message
+# toast would not). A newer banner replaces the current one (and resets the
+# timer) via a token, so the clear job never removes a newer banner.
 an_tmux_banner() {
 	[ -n "${TMUX:-}" ] || return 0
 	command -v tmux >/dev/null 2>&1 || return 0
@@ -34,26 +45,29 @@ an_tmux_banner() {
 	local sec=$(( ms / 1000 )); [ "$sec" -lt 1 ] && sec=1
 	local token="$$-$ms-${RANDOM:-0}"
 
-	# Save the user's normal status value once, so concurrent banners don't
-	# stack saves and lose the real value.
+	# Save the user's status-right once, so concurrent banners don't stack
+	# saves and lose the real value.
 	if [ "$(tmux show -gv '@agent_notify_active' 2>/dev/null)" != "1" ]; then
-		tmux set -g '@agent_notify_prev_status' "$(tmux show -gv status)"
+		tmux set -g '@agent_notify_prev_right' "$(tmux show -gv status-right)"
+		tmux set -g '@agent_notify_prev_right_len' "$(tmux show -gv status-right-length)"
 		tmux set -g '@agent_notify_active' "1"
 	fi
 	tmux set -g '@agent_notify_token' "$token"
 	tmux set -g '@agent_notify' "$content"
-	tmux set -g 'status-format[1]' "#{@agent_notify}"
-	tmux set -g status 2
+	tmux set -g status-right-length 200
+	tmux set -g status-right "#{@agent_notify}"
+	tmux refresh-client -S 2>/dev/null || true
 
 	# Detached auto-clear: only clears if our token still owns the banner.
 	local clear_job='
 		sleep "$1"
 		[ "$(tmux show -gv @agent_notify_token 2>/dev/null)" = "$2" ] || exit 0
-		prev=$(tmux show -gv @agent_notify_prev_status 2>/dev/null); [ -z "$prev" ] && prev=on
-		tmux set -gu "status-format[1]" 2>/dev/null
-		tmux set -g status "$prev" 2>/dev/null
+		tmux set -g status-right "$(tmux show -gv @agent_notify_prev_right 2>/dev/null)" 2>/dev/null
+		len=$(tmux show -gv @agent_notify_prev_right_len 2>/dev/null); [ -z "$len" ] && len=40
+		tmux set -g status-right-length "$len" 2>/dev/null
 		tmux set -g @agent_notify "" 2>/dev/null
 		tmux set -g @agent_notify_active "0" 2>/dev/null
+		tmux refresh-client -S 2>/dev/null
 	'
 	if command -v setsid >/dev/null 2>&1; then
 		setsid -f bash -c "$clear_job" _ "$sec" "$token" >/dev/null 2>&1 &
@@ -66,6 +80,15 @@ an_tmux_banner() {
 #   $1 app  $2 urgency  $3 summary  $4 body  $5 replace-id(optional)  $6 category(optional)
 # -t 0 = never auto-expire (stays until dismissed or replaced).
 an_dunst() {
+	if an_spool_ok; then
+		# Host bridge: no notification id comes back, so no replace (-r).
+		# Write under a temp name and rename, so the bridge never reads half a file.
+		local tmp="$AGENT_NOTIFY_SPOOL/.$$.${RANDOM:-0}.tmp"
+		printf '%s\n%s\n%s\n%s\n' "$1" "$2" "$3" "$4" > "$tmp" 2>/dev/null &&
+			chmod 644 "$tmp" &&
+			mv -f "$tmp" "$AGENT_NOTIFY_SPOOL/$(date +%s%N).$$.msg" 2>/dev/null || rm -f "$tmp"
+		return 0
+	fi
 	command -v notify-send >/dev/null 2>&1 || return 0
 	local args=(-a "$1" -u "$2" -t 0 -p)
 	[ -n "${6:-}" ] && args+=(-c "$6")

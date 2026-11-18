@@ -17,7 +17,7 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 
 plugins=(git z zsh-autosuggestions)
 
-source $ZSH/oh-my-zsh.sh
+# source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
@@ -29,11 +29,20 @@ source $ZSH/oh-my-zsh.sh
 alias vim='nvim'
 alias tmuxi='tmuxinator'
 alias cc='claude'
+# Inside an nvim terminal (toggleterm), hide tmux from Claude Code only. With TMUX
+# set it wraps OSC 52 in tmux's DCS passthrough, which nvim's terminal cannot
+# parse and prints as garbage. Scoped to claude so tmuxinator etc. still see tmux.
+[[ -n $NVIM ]] && claude() { TMUX= command claude "$@"; }
 alias oc='opencode --auto'
 alias lzg='lazygit'
 alias lzd='lazydocker'
 alias genpass='( tr -dc "A-Za-z0-9" < /dev/urandom | head -c 14; tr -dc "!@#$%" < /dev/urandom | head -c 2 ) | fold -w1 | shuf | tr -d "\n" | ~/work/config/scripts/clip.sh'
 
+# Postgres passwords: encrypted to an SSH key in ~/.pgpass.age, decrypted to RAM by
+# `pgpass unlock` for the life of the tmux server (scripts/pgpass.sh).
+export PGPASSFILE="${XDG_RUNTIME_DIR:-/run/user/$UID}/pgpass"
+alias pgpass='~/work/config/scripts/pgpass.sh'
+alias dbui='~/work/config/scripts/dbui.sh'
 
 # Preferred editor for local and remote sessions
 export EDITOR='nvim'
@@ -57,16 +66,15 @@ export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
 # gvm + deno env are sourced once via ~/.profile (sourced above) — no repeat here.
 
 
-# ssh-agent via keychain: one shared agent per boot. First shell after boot
-# prompts for each key passphrase once; every later shell (and tmux pane) reuses
-# the same agent with no prompt. Push the socket into tmux so all panes agree.
-if command -v keychain >/dev/null 2>&1; then
-  eval "$(keychain --eval --quiet --agents ssh \
-    aioz-ipfs-prod aioz-monitor aioz-storage-prod cdn-demo demo-cicd dvault \
-    github gitlab-stagging-cicd hub internal_gitlab stag stream-prod \
-    tailscail transcribe)"
-  [[ -n $TMUX && -n $SSH_AUTH_SOCK ]] && \
-    tmux set-environment -g SSH_AUTH_SOCK "$SSH_AUTH_SOCK" 2>/dev/null
+# ssh-agent on demand (scripts/sshkey.sh): nothing runs until `sshkey` (pick
+# keys with fzf), `sshkey all` or `sshkey <name>`; passphrases are asked here in
+# the terminal. Every shell points at the same fixed socket, so keys added in
+# one terminal work in all of them. `sshkey stop` forgets them. Over SSH a
+# forwarded agent (ssh -A) wins.
+alias sshkey='~/work/config/scripts/sshkey.sh'
+if [[ -z $SSH_CONNECTION || -z $SSH_AUTH_SOCK ]]; then
+  export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR:-/run/user/$UID}/ssh-agent.sock"
+  [[ -n $TMUX ]] && tmux set-environment -g SSH_AUTH_SOCK "$SSH_AUTH_SOCK" 2>/dev/null
 fi
 
 # Keep DISPLAY / SSH_AUTH_SOCK fresh inside tmux. A pane whose shell started
@@ -78,7 +86,10 @@ if [[ -n $TMUX ]]; then
     local var line
     for var in DISPLAY SSH_AUTH_SOCK; do
       line=$(tmux show-environment "$var" 2>/dev/null)
-      [[ $line == "$var="* ]] && export "$line"
+      [[ $line == "$var="* ]] || continue
+      # Only a live agent socket (a stale gcr/forwarded path would hide sshkey's).
+      [[ $var == SSH_AUTH_SOCK && ! -S ${line#*=} ]] && continue
+      export "$line"
     done
   }
   autoload -Uz add-zsh-hook
@@ -86,16 +97,16 @@ if [[ -n $TMUX ]]; then
 fi
 
 # Added by Antigravity CLI installer
-export PATH="/home/tuan/.local/bin:$HOME/go/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/go/bin:$PATH"
 
 # opencode
-export PATH=/home/tuan/.opencode/bin:$PATH
+export PATH="$HOME/.opencode/bin:$PATH"
 
 # dedup history (added by claude)
 setopt HIST_IGNORE_ALL_DUPS HIST_SAVE_NO_DUPS HIST_FIND_NO_DUPS HIST_REDUCE_BLANKS
 
 # pnpm
-export PNPM_HOME="/home/tuan/.local/share/pnpm"
+export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME/bin:"*) ;;
   *) export PATH="$PNPM_HOME/bin:$PATH" ;;

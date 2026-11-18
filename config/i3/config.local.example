@@ -2,3 +2,6 @@
 # Output names: run `xrandr -q | grep ' connected'`.
 set $monitor_right "HDMI-0"
 set $monitor_left "DP-0"
+
+# Screen order and workspace -> monitor (tracked, uses the names above).
+include ~/.config/i3/monitors.conf
