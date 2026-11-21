@@ -184,6 +184,10 @@ each coding agent build in parallel stages that copy only the script they run,
 and the repo's dotfiles and scripts are copied last. Editing a helper script
 rebuilds in seconds; editing `scripts/agents.sh` reinstalls only the agents.
 
+To add apt packages, list them in `config/coding/apt-packages.txt` (one per
+line) and rebuild; only that step and the final layers run again. Packages
+installed with `apt-get` inside a running container are lost when it exits.
+
 ```bash
 docker build -f Dockerfile.coding \
   --build-arg USER_UID="$(id -u)" --build-arg USER_GID="$(id -g)" \
@@ -191,7 +195,7 @@ docker build -f Dockerfile.coding \
 ```
 
 From the config checkout, start a session with persistent state. Set
-`CODING_WORKSPACE` to the absolute path of the project to mount at `/workspace`.
+`CODING_WORKSPACE` to the code folder to mount (default `~/work`, at the same path inside).
 
 ```bash
 CODING_WORKSPACE=/absolute/path/to/project docker compose -f compose.coding.yaml run --rm coding
@@ -203,10 +207,11 @@ The container runs an SSH server on port 2222 that accepts only the keys in
 your host `~/.ssh/authorized_keys` (no passwords). The container runs as
 root, which under rootless Docker *is* your host user: files it writes to the
 workspace or `~/.claude` stay owned by you (the `coder` user would be a foreign
-subuid that can't write bind mounts). Log in as `root`; its home is `/home/coder`. ufw inside the
-container drops every other address: only `CODING_SSH_ALLOW` (default
-`10.0.0.40`; space/comma separated, CIDRs work) may connect. Ports are
-published by `up` (or `run --service-ports`):
+subuid that can't write bind mounts). Log in as `root`; its home is `/home/coder`. Port 2222 is
+published by the `egress` service, which drops every address except
+`CODING_SSH_ALLOW` (default `10.0.0.40`; space/comma separated, CIDRs work) and
+forwards the rest to the container, whose ufw accepts only `egress`. Port
+forwarding (`-L`/`-R`/`-D`) and agent forwarding are off.
 
 ```bash
 CODING_WORKSPACE=/absolute/path/to/project docker compose -f compose.coding.yaml up -d
@@ -214,11 +219,15 @@ ssh -p 2222 root@<this machine>       # from 10.0.0.40, then: tmux attach -t cod
 docker compose -f compose.coding.yaml exec coding tmux attach -t coding   # locally
 ```
 
-- Rootless Docker needs `scripts/docker.sh` once: its `slirp4netns` port driver passes the real client IP to the container (with the default driver every client looks like `172.17.0.1`, and ufw lets nobody in).
+- Rootless Docker needs `scripts/docker.sh` once: its `slirp4netns` port driver passes the real client IP to `egress` (with the default driver every client looks like `172.17.0.1`, and nobody gets in).
 - `authorized_keys` is read through `AuthorizedKeysCommand`; edits apply on the next login.
 - The host key lives in the `sshd-keys` volume, so rebuilds don't trigger known_hosts warnings. Logs: `/var/log/coding-sshd.log`. `CODING_SSHD=0` turns it off.
 
-Compose creates four named volumes (`sshd-keys` holds the SSH host key). The Zsh volume starts with the repo’s
+Compose creates named volumes for state that should survive rebuilds:
+`sshd-keys` holds the SSH host key, and `nvim-data`, `nvim-state` and
+`nvim-cache` keep Neovim's plugins, Mason tools and treesitter parsers, so a
+new image doesn't reinstall them (`docker volume rm config_nvim-data` for a
+clean reinstall). The Zsh volume starts with the repo’s
 `~/.zshrc` and saves subsequent edits and shell history. The Claude Code and
 Codex volumes keep their local settings, sessions, memory, and file-based
 login state. Sign in inside the container on first use with `claude auth login`.
@@ -231,20 +240,90 @@ host Claude directory instead. That mount shares credentials and allows Claude
 to write to the host directory. Claude may prompt for first-time setup in the
 container because a standard host install keeps `.claude.json` outside that
 directory. Claude history is indexed by project path, so history recorded under
-a host path may not appear under `/workspace`.
+a host path appears under the same path (code is mounted at its host path).
 
 With rootless Docker, add `--user 0:0` before `coding` in the Compose run
 command. Rootless Docker maps that container UID to your host user, which gives
 the terminal access to owner-only files in the bind mounts. This runs the
 terminal as root within the container's user namespace.
 
-Compose mounts `~/.ssh` read-only. Set `CODING_SSH_DIR` to an absolute path to
-use a different SSH directory. Use `ssh-agent zsh` in a tmux pane when you want
-to cache a decrypted key, then run `ssh-add ~/.ssh/<key>` in the new shell.
-The agent serves that shell and its child processes. Run `exit` to stop it.
-If SSH needs to record a new host key, use `ssh -o
-UserKnownHostsFile="$HOME/.config/zsh/known_hosts" …` to save it in the
-persistent Zsh volume.
+Compose mounts `~/.ssh` read-only, so nothing in the container can add a key
+to your host `authorized_keys` or rewrite `config`. Edit those on the host.
+New host keys are saved in the `ssh-state` volume (`config/coding/ssh_config`);
+hosts in your host `known_hosts` are still checked. Set `CODING_SSH_DIR` to an
+absolute path to use a different SSH directory. Use `ssh-agent zsh` in a tmux
+pane when you want to cache a decrypted key, then run `ssh-add ~/.ssh/<key>` in
+the new shell. The agent serves that shell and its child processes. Run `exit`
+to stop it.
+
+`docker` inside the container talks to its own daemon, the `docker` Compose
+service (`docker:dind`, data in the `dind-data` volume), not the host's: the
+host socket would give anything in the container your host user. Its
+containers, images and published ports are separate from the host's; reach a
+published port from the coding container as `docker:<port>`. Your code is
+mounted at the same path in both (with the same read-only overlays), so
+`-v ~/work/...` works.
+
+Outbound network: `coding` and its `docker` daemon sit on an internal network
+with no route out and no outside DNS. The `egress` service
+(`scripts/coding-egress.sh`) is the only way out: an HTTP(S) proxy (also used by
+SSH via `nc -X connect`) that lets through only `config/coding/egress-allow.txt`
+plus temporary entries. It also forwards inbound SSH (only from
+`CODING_SSH_ALLOW`) and, for `host:<port>` entries, a host port that the
+container reaches as `host.docker.internal:<port>`. Manage it from the host;
+the container can't approve its own access:
+
+```bash
+coding blocked                          # what was denied recently
+coding allow api.example.com 30m        # temporary (default 1h); s/m/h/d
+coding allow kibana.example.com:5601 host:5432 2h
+coding allow --permanent grafana.example.com   # appends to egress-allow.txt
+coding allow ls                         # temporary entries and time left
+coding deny api.example.com             # drop it (temporary and permanent)
+```
+
+Changes apply within ~10s. Tools that ignore `HTTPS_PROXY` simply can't
+connect. Containers you start inside get the proxy from
+`~/.docker/config.json`.
+
+Code: `~/work` (`CODING_WORKSPACE`) is mounted writable at the same path, so
+you can work across all repos in one container (`coding` refuses `~` or `/`).
+The host trusts some of it, so these are read-only inside (also for
+`docker run -v`): this repo (your dotfiles are symlinks into it; edit it on the
+host), and the vault's `.obsidian` (plugins), `.git` (obsidian-git) and
+`.agent/memory`. Git config and hooks of every other repo stay writable, so
+the host's git goes through `scripts/git-guard.sh`: it refuses to run in a repo
+under `~/work` whose git config or hooks could run a program (`core.fsmonitor`,
+pagers, `sshCommand`, filters, hooks…) until you approve exactly that.
+lazygit and nvim's gitsigns use it too. Link it once, on the host only:
+
+```bash
+ln -sfn ~/work/config/scripts/git-guard.sh ~/.local/bin/git
+ln -sfn ~/work/config/scripts/git-guard.sh ~/.local/bin/git-guard
+coding audit                 # repos with findings (also shown when `coding` creates the container)
+git-guard approve <repo>     # after checking what it found
+GIT_GUARD_OFF=1 git …        # skip once
+```
+
+Other things you run on the host from `~/work` (make, npm scripts, terraform,
+scripts) are not guarded: run those in the container.
+
+Credential files for agents (API tokens, service-account JSON, kubeconfigs)
+go in `~/.local/share/coding-secrets` on the host (`CODING_SECRETS_DIR`;
+`coding` creates it `0700`). The container sees it read-only at `/run/secrets`
+(`$AGENT_SECRETS`): outside the workspace, every repo and the vault, so it is
+never committed or synced, and nothing in the container can change it. Add files
+on the host with `install -m 0600 <file> ~/.local/share/coding-secrets/`; they
+show up in the running container right away.
+
+Clipboard: tmux runs with `set-clipboard external`, so only tmux copy mode and
+nvim yanks reach your clipboard; programs printing OSC 52 in a tmux pane
+can't replace it. Claude Code's copy still works (it runs `tmux load-buffer -w`,
+or OSC 52 inside nvim's terminal). nvim's `:terminal` forwards OSC 52 from any
+program running in it (nvim 0.11+, no off switch), so `cat` untrusted files in
+a tmux pane, not a toggleterm. Paste in nvim
+(`scripts/clip.sh --paste`) asks your terminal for its clipboard over OSC 52;
+kitty and Ghostty ask you to allow each read by default.
 
 To use a specific host Zsh config, add the following option before `coding`
 in the Compose command. The file must be readable by the container user.

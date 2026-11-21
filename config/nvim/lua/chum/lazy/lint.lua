@@ -39,23 +39,29 @@ return {
 			-- rust = { "clippy" },
 		}
 
+		-- Linters that run code from the project (eslint.config.js, .luacheckrc)
+		-- only run in trusted projects on the host (chum/trust.lua).
+		local runs_project_code = { eslint_d = true, luacheck = true }
+		local function run_linters()
+			local names = vim.tbl_filter(function(name)
+				return not runs_project_code[name] or require("chum.trust").allowed(0)
+			end, lint.linters_by_ft[vim.bo.filetype] or {})
+			if #names > 0 then
+				lint.try_lint(names)
+			end
+		end
+
 		-- Auto-lint on save and text changes
 		local lint_augroup = vim.api.nvim_create_augroup("lint", { clear = true })
 
 		vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
 			group = lint_augroup,
-			callback = function()
-				-- Only lint if linters are available for this filetype
-				local linters = lint.linters_by_ft[vim.bo.filetype]
-				if linters and #linters > 0 then
-					lint.try_lint()
-				end
-			end,
+			callback = run_linters,
 		})
 
 		-- Manual linting command
 		vim.keymap.set("n", "<leader>ll", function()
-			lint.try_lint()
+			run_linters()
 			vim.notify("Linting...", vim.log.levels.INFO, { title = "nvim-lint" })
 		end, { desc = "Trigger linting for current file" })
 

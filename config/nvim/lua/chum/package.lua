@@ -8,5 +8,7 @@ vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
 	spec = "chum.lazy",
-	change_detection = { notify = false }
+	change_detection = { notify = false },
+	-- No project .lazy.lua specs: a repo must not add plugins or run Lua here.
+	local_spec = false,
 })

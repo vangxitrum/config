@@ -1,0 +1,7 @@
+# Extra apt packages for the coding image (Dockerfile.coding, `system` stage).
+# One per line; `#` starts a comment. Rebuild the image after editing:
+# only this list's layer and the cheap final steps run again.
+rsync
+xclip
+# HTTP CONNECT for ssh through the egress proxy (config/coding/ssh_config).
+netcat-openbsd

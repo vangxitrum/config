@@ -10,6 +10,8 @@
 # host, hands each one to notify-send and deletes it.
 #
 # File format: line 1 app, line 2 urgency, line 3 summary, the rest is the body.
+# An empty *.close file closes the last notification shown here (sent by
+# tmux-jump-last-notify.sh after a jump inside the container).
 #
 # Started by i3 (config/i3/config); safe to start again, only one instance runs.
 set -u
@@ -28,7 +30,19 @@ flock -n 9 || exit 0
 
 command -v notify-send >/dev/null || { echo "agent-notify-bridge: notify-send not found" >&2; exit 1; }
 
+last_id=""
+
 while :; do
+	for f in "$spool"/*.close; do
+		[ -f "$f" ] || continue
+		rm -f "$f"
+		[ -n "$last_id" ] && gdbus call --session \
+			--dest org.freedesktop.Notifications \
+			--object-path /org/freedesktop/Notifications \
+			--method org.freedesktop.Notifications.CloseNotification "$last_id" \
+			>/dev/null 2>&1
+		last_id=""
+	done
 	for f in "$spool"/*.msg; do
 		[ -f "$f" ] || continue
 		{
@@ -39,7 +53,7 @@ while :; do
 		} <"$f"
 		rm -f "$f"
 		case "$urgency" in low | normal | critical) ;; *) urgency=normal ;; esac
-		notify-send -a "${app:-agent}" -u "$urgency" -t 0 "${summary:-${app:-agent}}" "$body" 2>/dev/null || true
+		last_id=$(notify-send -p -a "${app:-agent}" -u "$urgency" -t 0 "${summary:-${app:-agent}}" "$body" 2>/dev/null) || last_id=""
 	done
 	sleep "$interval"
 done

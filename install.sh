@@ -61,6 +61,13 @@ for path in "$HOME_SRC"/.[!.]* "$HOME_SRC"/*; do
   link "$HOME_SRC/$name" "$HOME/$name"
 done
 
+# pi keeps auth and sessions in ~/.pi/agent, so link only what is shared:
+# extensions from this repo, the skills Claude Code uses, and the personal
+# agent rules (in the coding container compose.coding.yaml mounts those).
+link "$CONFIG_SRC/pi/extensions" "$HOME/.pi/agent/extensions"
+link "$HOME/.claude/skills" "$HOME/.pi/agent/skills"
+link "$HOME/.claude/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
+
 # Per-machine files: create <name>.local from <name>.local.example if missing.
 # The .local copies are gitignored, so each machine keeps its own values.
 while IFS= read -r example; do

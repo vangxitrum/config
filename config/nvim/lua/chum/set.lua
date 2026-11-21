@@ -33,7 +33,9 @@ vim.opt.clipboard = "unnamedplus"
 
 -- Yanks must reach the clipboard of the machine I am typing on, also over SSH.
 -- Inside tmux, scripts/clip.sh sends them through tmux as OSC 52 (and to this
--- host's X clipboard), and paste reads X when there is one, else tmux's buffer.
+-- host's X clipboard). Paste (clip.sh --paste) reads X when there is one, else
+-- asks the outer terminal for its clipboard over OSC 52, so `p` in the coding
+-- container gets what was copied on the host.
 -- Outside tmux over SSH, use the built-in OSC 52 provider; paste comes from the
 -- unnamed register because many terminals refuse OSC 52 reads.
 if vim.env.TMUX then
@@ -42,8 +44,8 @@ if vim.env.TMUX then
     name = "tmux-osc52",
     copy = { ["+"] = clip, ["*"] = clip },
     paste = {
-      ["+"] = { "sh", "-c", "xclip -o -selection clipboard 2>/dev/null || tmux save-buffer -" },
-      ["*"] = { "sh", "-c", "xclip -o -selection clipboard 2>/dev/null || tmux save-buffer -" },
+      ["+"] = { clip[1], "--paste" },
+      ["*"] = { clip[1], "--paste" },
     },
   }
 elseif vim.env.SSH_TTY then
@@ -57,6 +59,11 @@ elseif vim.env.SSH_TTY then
     paste = { ["+"] = paste, ["*"] = paste },
   }
 end
+
+-- Never run code from the files or folders being edited: no .nvim.lua /
+-- .exrc in the cwd, no expressions in modelines (see also chum/trust.lua).
+vim.o.exrc = false
+vim.o.modelineexpr = false
 
 -- Enable break indent
 vim.opt.breakindent = true

@@ -1,0 +1,17 @@
+# ssh client defaults for the coding container (installed as
+# /etc/ssh/ssh_config.d/coding.conf by Dockerfile.coding).
+#
+# ~/.ssh is your host directory, mounted read-only (compose.coding.yaml). New
+# host keys are written to the first file, a volume; hosts you already know are
+# still checked against your host known_hosts.
+#
+# The container has no direct route out: SSH goes through the egress proxy
+# (HTTP CONNECT), which allows only `<host>:22` entries in
+# config/coding/egress-allow.txt (or `coding allow <host>:22` on the host).
+# Your ~/.ssh/config is read first, so a ProxyCommand/ProxyJump there wins.
+Host localhost 127.0.0.1 docker
+    ProxyCommand none
+
+Host *
+    UserKnownHostsFile /home/coder/.local/state/ssh/known_hosts /home/coder/.ssh/known_hosts
+    ProxyCommand nc -X connect -x 172.31.250.2:3128 %h %p

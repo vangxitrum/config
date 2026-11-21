@@ -25,4 +25,9 @@ AuthorizedKeysCommand /usr/bin/cat /home/coder/.ssh/authorized_keys
 AuthorizedKeysCommandUser root
 
 X11Forwarding no
+# No tunnels through the container into your LAN or the host's loopback.
+AllowTcpForwarding no
+AllowAgentForwarding no
+AllowStreamLocalForwarding no
+PermitTunnel no
 PermitUserEnvironment no

@@ -1,4 +1,5 @@
 require("chum.set")
+require("chum.trust")
 require("chum.remap")
 require("chum.package")
 require("chum.autocmd")

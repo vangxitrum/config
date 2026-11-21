@@ -21,6 +21,13 @@ return {
 	opts = {
 		formatters = {
 			golines = { prepend_args = { "--max-len=80", "--base-formatter=gofumpt" } },
+			-- prettier loads the project's config and plugins (JS): trusted
+			-- projects only on the host (chum/trust.lua).
+			prettierd = {
+				condition = function(_, ctx)
+					return require("chum.trust").allowed(ctx.buf)
+				end,
+			},
 			-- ["golangci-lint"] = {
 			-- 	append_args = {
 			-- 		"--config",

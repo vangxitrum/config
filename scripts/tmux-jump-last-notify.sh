@@ -10,16 +10,40 @@
 #
 # The matching close binding in i3 (Control+n) also removes the state file so
 # that a user-dismissed notification cannot later be jumped to.
+#
+# Coding container (compose.coding.yaml): agents there write the state file
+# inside the container, next to their own tmux server. On the host (i3 $mod+g)
+# with no local state, the jump is handed to the container's copy of this
+# script; inside it, the host bridge closes the notification.
 
 set -u
 
+# shellcheck source=/dev/null
+. "$(dirname "$0")/agent-notify-lib.sh"
+
 fail() {
-	notify-send -a "tmux-jump" -u low "tmux jump" "$1" 2>/dev/null || true
+	if an_spool_ok; then
+		# No notify-send in the container; the key was pressed in tmux anyway.
+		tmux display-message "tmux jump: $1" 2>/dev/null || true
+	else
+		notify-send -a "tmux-jump" -u low "tmux jump" "$1" 2>/dev/null || true
+	fi
 	exit 0
 }
 
 state_dir="${XDG_CACHE_HOME:-$HOME/.cache}/tmux-jump"
 state_file="$state_dir/active"
+
+if [ ! -s "$state_file" ]; then
+	cid=$(an_coding_container)
+	if [ -n "$cid" ]; then
+		docker exec "$cid" sh -c 'test -s "${XDG_CACHE_HOME:-$HOME/.cache}/tmux-jump/active"' \
+			|| fail "No active notification to jump to."
+		docker exec "$cid" sh -c '"$HOME/work/config/scripts/tmux-jump-last-notify.sh"' >/dev/null 2>&1
+		i3-msg 'workspace number 1:terminal' >/dev/null 2>&1 || true
+		exit 0
+	fi
+fi
 
 [ -s "$state_file" ] || fail "No active notification to jump to."
 
@@ -68,7 +92,9 @@ if [ -n "${pane_id:-}" ]; then
 	tmux select-pane -t "$pane_id" 2>/dev/null || true
 fi
 
-if [ -n "$notify_id" ]; then
+if [ -z "$notify_id" ]; then
+	an_spool_close
+else
 	gdbus call --session \
 		--dest org.freedesktop.Notifications \
 		--object-path /org/freedesktop/Notifications \

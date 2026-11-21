@@ -1,0 +1,75 @@
+# Outbound allowlist for the coding container (compose.coding.yaml, `egress`).
+# The container has no route out except through the egress proxy, which lets
+# through only what is listed here (plus temporary `coding allow` entries).
+# Changes apply within ~10s, no restart. Denied requests: `coding blocked`.
+#
+#   example.com          HTTP/HTTPS (80, 443) to example.com
+#   .example.com         ...and every subdomain
+#   example.com:5601     that port only (any other port; :22 = SSH)
+#   1.2.3.4  1.2.3.0/24  IPs / CIDRs, with or without :port
+#   host:5432            the host's port 5432, reached from the container as
+#                        host.docker.internal:5432 (local DBs, SSH tunnels)
+#
+# Temporary from the host:  coding allow api.example.com 30m
+# Permanent:                coding allow --permanent api.example.com
+# Broad entries (github.com, storage buckets) are also a way to send data out:
+# keep the list short.
+
+# ── coding agents ─────────────────────────────────────────────────────────────
+.anthropic.com
+.claude.ai
+.claude.com
+.openai.com
+.chatgpt.com
+opencode.ai
+models.dev
+
+# ── git and packages ──────────────────────────────────────────────────────────
+github.com
+.github.com
+.githubusercontent.com
+registry.npmjs.org
+pypi.org
+files.pythonhosted.org
+proxy.golang.org
+sum.golang.org
+archive.ubuntu.com
+security.ubuntu.com
+
+# ── docker registries (the `docker` service pulls through the proxy) ──────────
+registry-1.docker.io
+auth.docker.io
+production.cloudflare.docker.com
+production.cloudfront.docker.com
+ghcr.io
+
+# ── SSH (from ~/.ssh/config, 2026-11-21; prune what agents don't need) ────────
+github.com:22
+gitlab.internal
+gitlab.internal:22
+a.wnode.cyou:22
+b.wnode.cyou:22
+c.wnode.cyou:22
+10.0.0.90:22
+10.0.0.59:22
+10.0.0.231:22
+10.0.0.209:22
+10.0.0.164:22
+10.0.0.106:22
+68.183.189.51:22
+35.213.189.86:22
+206.189.44.255:22
+178.128.62.128:22
+167.71.221.152:22
+167.172.5.171:22
+167.172.4.178:22
+159.223.90.162:22
+157.245.205.72:22
+157.230.249.73:22
+157.230.195.37:22
+152.42.219.105:22
+146.190.95.188:22
+139.59.240.78:22
+139.59.217.252:22
+139.59.217.109:22
+139.59.103.173:22

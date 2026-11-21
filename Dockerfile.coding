@@ -5,7 +5,7 @@
 #   base ─┬─ system (apt: docker CLI, psql, btop/age, tmuxinator, sshd/ufw)
 #         ├─ zsh, node, python, gotools, nvim          (in parallel)
 #         └─ agent-claude, agent-codex, agent-opencode,
-#            agent-hermes (from node)                  (in parallel)
+#            agent-pi, agent-hermes (from node)        (in parallel)
 #   final = system + every stage's home merged in (COPY --link), then the
 #           repo's config/home/scripts, cheapest-to-redo last.
 #
@@ -70,21 +70,36 @@ RUN case "$TARGETARCH" in amd64) arch=x86_64 ;; arm64) arch=arm64 ;; *) exit 1 ;
     | tar -xz -C /tmp/nvim --strip-components=1
 
 # One stage per agent: they download in parallel and cache separately.
+# Versions are pinned so a rebuild doesn't pull whatever was published that
+# hour; bump them here (or --build-arg CLAUDE_VERSION=latest). The agents can
+# still update themselves at runtime.
 FROM base AS agent-claude
+ARG CLAUDE_VERSION=2.1.330
 COPY --chown=coder scripts/agents.sh /tmp/build/
 RUN bash /tmp/build/agents.sh claude && rm -rf ~/.cache
 
 FROM base AS agent-codex
+ARG CODEX_VERSION=0.170.0
 COPY --chown=coder scripts/agents.sh /tmp/build/
 RUN bash /tmp/build/agents.sh codex && rm -rf ~/.cache
 
 FROM base AS agent-opencode
+ARG OPENCODE_VERSION=1.19.6
 COPY --chown=coder scripts/agents.sh /tmp/build/
 RUN bash /tmp/build/agents.sh opencode && rm -rf ~/.cache
+
+# pi is an npm package: installed with the node stage's npm into ~/.local
+# (bin/pi + lib/node_modules); ~/.nvm is dropped so only ~/.local is merged.
+FROM node AS agent-pi
+ARG PI_VERSION=1.6.0
+COPY --chown=coder scripts/agents.sh /tmp/build/
+RUN bash -c 'source "$HOME/.nvm/nvm.sh" && nvm use default && bash /tmp/build/agents.sh pi' \
+    && rm -rf ~/.nvm ~/.cache ~/.npm
 
 # Hermes installs with Node on PATH (as before); ~/.nvm is dropped afterwards
 # so its copy doesn't shadow the node stage's.
 FROM node AS agent-hermes
+ARG HERMES_COMMIT=ae2a81ccc00e9b7c06301523e5bb09608397149c
 COPY --chown=coder scripts/agents.sh /tmp/build/
 RUN bash -c 'source "$HOME/.nvm/nvm.sh" && nvm use default && bash /tmp/build/agents.sh hermes' \
     && rm -rf ~/.nvm ~/.cache ~/.npm
@@ -117,6 +132,17 @@ RUN bash /tmp/build/postgres-client.sh --native && sudo rm -rf /var/lib/apt/list
 COPY --chown=coder scripts/tools.sh /tmp/build/
 RUN bash /tmp/build/tools.sh && sudo rm -rf /var/lib/apt/lists/* ~/.cache
 
+# Extra apt packages: add them to config/coding/apt-packages.txt and rebuild.
+# Only that file is copied, so editing it re-runs just this step, not the
+# stages above.
+COPY config/coding/apt-packages.txt /tmp/build/
+RUN packages=$(sed -e 's/#.*//' /tmp/build/apt-packages.txt | xargs) \
+    && if [ -n "$packages" ]; then \
+        sudo apt-get update \
+        && sudo apt-get install -y --no-install-recommends $packages \
+        && sudo rm -rf /var/lib/apt/lists/*; \
+    fi
+
 # ── final ─────────────────────────────────────────────────────────────────────
 # Runs as container root: under rootless Docker that is your host user, so
 # files written to bind mounts (workspace, ~/.claude) stay yours, while
@@ -139,14 +165,18 @@ COPY --link --chown=0:0 --from=gotools /home/coder/ /home/coder/
 COPY --link --chown=0:0 --from=agent-claude /home/coder/ /home/coder/
 COPY --link --chown=0:0 --from=agent-codex /home/coder/ /home/coder/
 COPY --link --chown=0:0 --from=agent-opencode /home/coder/ /home/coder/
+COPY --link --chown=0:0 --from=agent-pi /home/coder/ /home/coder/
 COPY --link --chown=0:0 --from=agent-hermes /home/coder/ /home/coder/
 
 # Make Node available to tools launched directly, including Neovim's package manager.
 RUN bash -ec 'source "$HOME/.nvm/nvm.sh"; nvm use default; version_bin="$(dirname "$(command -v node)")"; ln -sf "$version_bin/node" "$version_bin/npm" "$version_bin/npx" "$HOME/.local/bin/"'
 
 # sshd config and entrypoint: only these files, so other script edits skip it.
-COPY config/coding/sshd_config scripts/coding-sshd.sh scripts/coding-entrypoint.sh /tmp/sshd/
+COPY config/coding/sshd_config config/coding/ssh_config config/coding/docker-config.json \
+    scripts/coding-sshd.sh scripts/coding-entrypoint.sh /tmp/sshd/
 RUN sudo install -m 0644 /tmp/sshd/sshd_config /etc/ssh/sshd_config.d/coding.conf \
+    && sudo install -m 0644 /tmp/sshd/ssh_config /etc/ssh/ssh_config.d/coding.conf \
+    && install -D -m 0644 /tmp/sshd/docker-config.json /home/coder/.docker/config.json \
     && sudo install -m 0755 /tmp/sshd/coding-sshd.sh /usr/local/sbin/coding-sshd \
     && sudo install -m 0755 /tmp/sshd/coding-entrypoint.sh /usr/local/bin/coding-entrypoint \
     && sudo rm -rf /tmp/sshd \
@@ -169,6 +199,7 @@ ENV ZDOTDIR=/home/coder/.config/zsh \
     XDG_RUNTIME_DIR=/dev/shm/config-coding-$USER_UID \
     IS_SANDBOX=1
 RUN install -d -m 0700 "$ZDOTDIR" "$CLAUDE_CONFIG_DIR" "$CODEX_HOME" \
+    && ln -sfn "$CLAUDE_CONFIG_DIR/skills" "$HOME/.pi/agent/skills" \
     && install -m 0600 home/.zshrc "$ZDOTDIR/.zshrc" \
     && ln -sfn "$ZDOTDIR/.zshrc" "$HOME/.zshrc" \
     && printf '%s\n' 'HISTFILE="$ZDOTDIR/.zsh_history"' 'HISTSIZE=50000' 'SAVEHIST=50000' 'setopt INC_APPEND_HISTORY' > "$ZDOTDIR/.zshenv"

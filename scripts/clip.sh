@@ -9,6 +9,31 @@
 #
 # Usage: <cmd> | clip.sh          OSC 52 + X clipboard
 #        <cmd> | clip.sh --x11    X clipboard only (tmux copy-pipe already sent OSC 52)
+#        clip.sh --paste          print the clipboard (nvim's paste provider)
+#
+# --paste reads this host's X clipboard when there is one. Otherwise (the
+# coding container, SSH) it asks the terminal I am typing in for its clipboard
+# via OSC 52 through tmux (`refresh-client -l`); kitty and Ghostty ask before
+# answering by default. Without an answer it falls back to tmux's last buffer.
+
+if [ "$1" = "--paste" ]; then
+	if [ -n "$DISPLAY" ] && command -v xclip >/dev/null 2>&1 &&
+		xclip -o -selection clipboard 2>/dev/null; then
+		exit 0
+	fi
+	[ -n "$TMUX" ] || exit 0
+	top() { tmux list-buffers -F '#{buffer_name}' 2>/dev/null | head -n1; }
+	before=$(top)
+	tmux refresh-client -l 2>/dev/null
+	# The answer arrives asynchronously as a new paste buffer. Wait up to 5s,
+	# long enough to click a terminal's "allow" prompt.
+	for _ in $(seq 50); do
+		[ "$(top)" != "$before" ] && break
+		sleep 0.1
+	done
+	tmux save-buffer - 2>/dev/null
+	exit 0
+fi
 
 buf=$(mktemp)
 trap 'rm -f "$buf"' EXIT

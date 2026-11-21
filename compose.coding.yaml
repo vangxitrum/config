@@ -1,47 +1,244 @@
 services:
-  coding:
-    image: config-coding:latest
-    stdin_open: true
-    tty: true
-    # Same name as scripts/pg-docker.sh: host services and published DB ports.
-    # Needs the rootless setup from scripts/docker.sh (host-gateway -> 10.0.2.2).
+  # The only way out of the sandbox network (scripts/coding-egress.sh): an
+  # allowlisting proxy for HTTP(S) and SSH (config/coding/egress-allow.txt plus
+  # temporary `coding allow` entries), inbound SSH from CODING_SSH_ALLOW, and
+  # `host:<port>` forwards to the host. Nothing in `coding` can change it.
+  egress:
+    build:
+      dockerfile_inline: |
+        FROM alpine:3
+        RUN apk add --no-cache squid socat iptables
+    image: config-egress:latest
+    command: ["sh", "/egress/coding-egress.sh"]
+    # iptables for inbound SSH, in this container's own network namespace.
+    cap_add:
+      - NET_ADMIN
+    # Never route packets for the sandbox: only proxied/forwarded traffic leaves.
+    sysctls:
+      net.ipv4.ip_forward: "0"
+    environment:
+      CODING_SSH_ALLOW: ${CODING_SSH_ALLOW:-10.0.0.40}
+      CODING_IP: 172.31.250.10
+      SANDBOX_IP: 172.31.250.2
+    # host:<port> entries forward here. Needs the rootless setup from
+    # scripts/docker.sh (host-gateway -> the host's loopback, 10.0.2.2).
     extra_hosts:
       - host.docker.internal:host-gateway
+    # sshd of the coding container. Client IPs are only real with rootless
+    # Docker's slirp4netns port driver (scripts/docker.sh).
+    ports:
+      - ${CODING_SSH_PUBLISH:-2222}:2222
+    networks:
+      default:
+      sandbox:
+        ipv4_address: 172.31.250.2
+    volumes:
+      - ./scripts/coding-egress.sh:/egress/coding-egress.sh:ro
+      # The directory, not the file: editors replace the file, a file bind
+      # would keep showing the old one.
+      - ./config/coding:/etc/egress:ro
+      - ${XDG_RUNTIME_DIR:-/run/user/1000}/coding-egress:/run/egress-temp:ro
+
+  # The coding container's own Docker daemon, for `docker`/lazydocker inside it.
+  # Not the host's socket: that would hand anything in the container your host
+  # user (`docker run -v $HOME:/h`). privileged stays inside rootless Docker's
+  # user namespace: root here is your host uid, with no host devices and no
+  # host files beyond the mounts below. Its containers, images and published
+  # ports live here: reach ports from the coding container as `docker:<port>`.
+  docker:
+    image: docker:29-dind
+    privileged: true
+    command: ["dockerd", "--host=unix:///run/dind/docker.sock"]
+    depends_on:
+      - egress
+    networks:
+      sandbox:
+        ipv4_address: 172.31.250.11
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+      # Image pulls go through `egress` (registries are in the allowlist).
+      HTTP_PROXY: http://172.31.250.2:3128
+      HTTPS_PROXY: http://172.31.250.2:3128
+      NO_PROXY: localhost,127.0.0.1,172.31.250.0/24
+    volumes:
+      - dind-sock:/run/dind
+      - dind-data:/var/lib/docker
+      # Same path as in the coding container (and the host), so `-v` paths work.
+      - type: bind
+        source: ${CODING_WORKSPACE:-${HOME}/work}
+        target: ${CODING_WORKSPACE:-${HOME}/work}
+      # The same read-only overlays as in `coding`: `docker run -v` must not be a
+      # way around them.
+      - type: bind
+        source: ${CODING_CONFIG_REPO:-${HOME}/work/config}
+        target: ${CODING_CONFIG_REPO:-${HOME}/work/config}
+        read_only: true
+      - type: bind
+        source: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.obsidian
+        target: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.obsidian
+        read_only: true
+      - type: bind
+        source: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.git
+        target: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.git
+        read_only: true
+      - type: bind
+        source: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.agent/memory
+        target: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.agent/memory
+        read_only: true
+
+  coding:
+    image: config-coding:latest
+    depends_on:
+      - egress
+      - docker
+    networks:
+      sandbox:
+        ipv4_address: 172.31.250.10
+    # PID 1 is a plain sleep, not the image's default tmux session: killing
+    # that session would otherwise stop the container and every `coding …`
+    # exec and SSH shell in it. `coding` creates/attaches the session on demand.
+    # init (tini) reaps orphans left by exec'd and SSH processes.
+    command: ["sleep", "infinity"]
+    init: true
+    stdin_open: true
+    tty: true
+    # Same name as scripts/pg-docker.sh, but it is `egress`: a host port is
+    # reachable only once allowed (`coding allow host:5432`).
+    extra_hosts:
+      - host.docker.internal:172.31.250.2
     # Notifications go to the host's dunst via scripts/agent-notify-bridge.sh.
     environment:
+      # Colour support of your terminal. Without these Docker sets TERM=xterm
+      # (8 colours) and tmux/nvim colours come out too harsh. Not your host
+      # TERM: the image has no terminfo for xterm-kitty / xterm-ghostty.
+      TERM: ${CODING_TERM:-xterm-256color}
+      COLORTERM: ${COLORTERM:-truecolor}
       AGENT_NOTIFY_SPOOL: /run/agent-notify
+      DOCKER_HOST: unix:///run/dind/docker.sock
+      # Where agents find credential files (read-only mount below).
+      AGENT_SECRETS: /run/secrets
+      # Everything outbound goes through `egress` (no other route exists).
+      HTTP_PROXY: &proxy http://172.31.250.2:3128
+      HTTPS_PROXY: *proxy
+      http_proxy: *proxy
+      https_proxy: *proxy
+      NO_PROXY: &noproxy localhost,127.0.0.1,::1,docker,egress,host.docker.internal,172.31.250.0/24
+      no_proxy: *noproxy
       # sshd (scripts/coding-sshd.sh): keys from your ~/.ssh/authorized_keys,
-      # no passwords; ufw lets only these addresses reach it. CODING_SSHD=0
-      # skips it.
-      CODING_SSH_ALLOW: ${CODING_SSH_ALLOW:-10.0.0.40}
+      # no passwords. Clients connect through `egress`, which checks
+      # CODING_SSH_ALLOW; ufw here lets in only `egress`. CODING_SSHD=0 skips it.
+      CODING_SSH_ALLOW: 172.31.250.2
       CODING_SSHD: ${CODING_SSHD:-1}
     # ufw needs NET_ADMIN (only inside the container's own network namespace).
     cap_add:
       - NET_ADMIN
-    # Published with `up`, or `run --service-ports`. Client IPs reach ufw only
-    # with rootless Docker's slirp4netns port driver (scripts/docker.sh).
-    ports:
-      - ${CODING_SSH_PUBLISH:-2222}:2222
+    # Your code (~/work by default), writable, at the same path as on the host.
+    # The host must not run what the container could have changed there:
+    # see the read-only overlays at the end and scripts/git-guard.sh.
+    working_dir: ${CODING_WORKSPACE:-${HOME}/work}
     volumes:
       - type: bind
-        source: ${CODING_WORKSPACE:-.}
-        target: /workspace
+        source: ${CODING_WORKSPACE:-${HOME}/work}
+        target: ${CODING_WORKSPACE:-${HOME}/work}
       - zsh:/home/coder/.config/zsh
       - ${CODING_CLAUDE_STATE:-claude}:/home/coder/.claude
       - codex:/home/coder/.local/state/codex
+      # pi: auth.json (/login), sessions, settings. Seeded on first use from the
+      # image's ~/.pi (install.sh links: extensions, skills).
+      - pi:/home/coder/.pi
+      # Neovim plugins (lazy.nvim), Mason tools, treesitter parsers, undo/shada:
+      # kept across image rebuilds so nvim doesn't reinstall everything.
+      - nvim-data:/home/coder/.local/share/nvim
+      - nvim-state:/home/coder/.local/state/nvim
+      - nvim-cache:/home/coder/.cache/nvim
       - type: bind
         source: ${CODING_SSH_DIR:-${HOME}/.ssh}
         target: /home/coder/.ssh
+        # Read-only: a writable mount would let anything in the container add
+        # itself to your host's authorized_keys or rewrite ~/.ssh/config.
         read_only: true
         bind:
           create_host_path: false
+      # New host keys go here (config/coding/ssh_config), since ~/.ssh is read-only.
+      - ssh-state:/home/coder/.local/state/ssh
       - sshd-keys:/etc/ssh/host_keys
       - type: bind
         source: ${XDG_RUNTIME_DIR:-/run/user/1000}/agent-notify
         target: /run/agent-notify
+      # Socket of the `docker` service above (DOCKER_HOST).
+      - dind-sock:/run/dind
+      # Personal agent rules (host ~/.claude/AGENTS.md), read-only, for every
+      # agent (CLAUDE_CONFIG_DIR, CODEX_HOME, ~/.pi/agent). Restart the
+      # container after editing the host file: a file bind keeps the old inode.
+      - type: bind
+        source: ${HOME}/.claude/AGENTS.md
+        target: /home/coder/.claude/CLAUDE.md
+        read_only: true
+      - type: bind
+        source: ${HOME}/.claude/AGENTS.md
+        target: /home/coder/.local/state/codex/AGENTS.md
+        read_only: true
+      - type: bind
+        source: ${HOME}/.claude/AGENTS.md
+        target: /home/coder/.pi/agent/AGENTS.md
+        read_only: true
+      # Obsidian vault at the same absolute path the agent rules use for memory.
+      - type: bind
+        source: ${CODING_VAULT:-${HOME}/work/personal/tuan}
+        target: ${CODING_VAULT:-${HOME}/work/personal/tuan}
+      # Credential files for agents (API tokens, service-account JSON, kubeconfigs).
+      # On the host outside every repo, workspace and the vault, so nothing
+      # commits or syncs them; read-only, so the container can't swap them.
+      # Add or change them on the host (scripts/coding.sh creates it 0700).
+      - type: bind
+        source: ${CODING_SECRETS_DIR:-${HOME}/.local/share/coding-secrets}
+        target: /run/secrets
+        read_only: true
+      # This repo read-only: your host dotfiles (~/.zshrc, i3, tmux, nvim, git)
+      # are symlinks into it, and it holds git-guard and the egress allowlist.
+      # Edit it on the host.
+      - type: bind
+        source: ${CODING_CONFIG_REPO:-${HOME}/work/config}
+        target: ${CODING_CONFIG_REPO:-${HOME}/work/config}
+        read_only: true
+      # Obsidian's config and plugins read-only: plugin code (.obsidian/plugins)
+      # runs on the host when Obsidian starts.
+      - type: bind
+        source: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.obsidian
+        target: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.obsidian
+        read_only: true
+      # The vault's git repo read-only: obsidian-git runs git on the host, and a
+      # writable .git/config (core.fsmonitor, hooks) would run code there.
+      - type: bind
+        source: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.git
+        target: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.git
+        read_only: true
+      # Agent memory read-only on top: every agent session, host ones too,
+      # reads it as trusted context, so the container must not plant notes.
+      - type: bind
+        source: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.agent/memory
+        target: ${CODING_VAULT:-${HOME}/work/personal/tuan}/.agent/memory
+        read_only: true
+
+networks:
+  default:
+  # No route out and no outside DNS: `coding` and `docker` reach the world
+  # only through `egress`. Fixed addresses so ufw and the proxy env can name them.
+  sandbox:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
 
 volumes:
+  dind-sock:
+  dind-data:
   zsh:
+  ssh-state:
   sshd-keys:
   claude:
   codex:
+  pi:
+  nvim-data:
+  nvim-state:
+  nvim-cache:

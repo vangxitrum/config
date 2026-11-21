@@ -23,6 +23,23 @@ an_spool_ok() {
 	[ -n "${AGENT_NOTIFY_SPOOL:-}" ] && [ -d "$AGENT_NOTIFY_SPOOL" ] && [ -w "$AGENT_NOTIFY_SPOOL" ]
 }
 
+# Ask the host bridge to close the notification it showed last (it keeps the
+# id; the container never sees it). No-op outside the container.
+an_spool_close() {
+	an_spool_ok || return 0
+	: > "$AGENT_NOTIFY_SPOOL/$(date +%s%N).$$.close" 2>/dev/null || true
+}
+
+# On the host: print the id of the running coding container
+# (compose.coding.yaml), or nothing. Its tmux server and jump state live in
+# there, not on the host.
+an_coding_container() {
+	an_spool_ok && return 0  # already inside it
+	command -v docker >/dev/null 2>&1 || return 0
+	docker ps -q --filter label=com.docker.compose.service=coding \
+		--filter ancestor=config-coding:latest 2>/dev/null | head -n1
+}
+
 an_set_mode() {  # $1 = tmux|dunst
 	local f="${XDG_CONFIG_HOME:-$HOME/.config}/agent-notify/mode"
 	mkdir -p "$(dirname "$f")"
